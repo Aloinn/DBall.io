@@ -53,6 +53,25 @@ socket.on('message', function(data) {
   console.log(data);
 });
 
+// DISPLAY
+var canvas = document.getElementById("myCanvas");
+canvas.width = 800;
+canvas.height = 600;
+var ctx = canvas.getContext("2d");
+
+// DRAW THE CLIENT SCREEN BY DRAWING ALL PLAYER INSTANCES
+socket.on('state',function(players){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(var id in players){
+    var player = players[id];
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, 15, 0, 2*Math.PI);
+    ctx.fillStyle = "#00000";
+    ctx.fill();
+    ctx.closePath();
+  }
+});
+
 /*
 // SENDS A CALL WITH MOVEMENT INFORMATION TO THE SERVER
 function sendMovement(){
