@@ -19,11 +19,48 @@ server.listen(5002, function() {
   console.log('Starting server on port 5002');
 });
 
-// Add the WebSocket Handlers
-io.on('connection', function(socket){
+// INIT LIST OF PLAYERS
+var players = {};
+
+io.on('connection',function(socket){
+  // WHEN NEW PLAYER JOINS
+  socket.on('new player',function(){
+
+    io.sockets.emit('message','hi');
+  })
 
 });
 
-setInterval(function(){
-  io.sockets.emit('message','Yoo!');
-} , 1000);
+
+/*
+io.on('connection', function(socket){
+  // NEW PLAYER JOINS
+  io.on('newplayer',function(){
+    io.sockets.emit('message','hi');
+    players[socket.id] = {
+      x: 300,
+      y: 300
+    };
+    /*
+    var idp = socket.id;
+    players[idp] = new Object();
+    players[idp].x = 300;
+    players[idp].y = 300;
+  });
+
+  // PLAYER MOVEMENT CHECKS
+  io.on('movement',function(data){
+    // (data refers to the movement function of client)
+    var player = players[socket.id] || {};
+    if(data.left) {player.x -=5;}
+    if(data.right){player.x +=5;}
+    if(data.up) {player.y -=5;}
+    if(data.down){player.y +=5;}
+  });
+});
+
+// SEND THE FLAG FOR THE PLAYER TO DRAW THE GAME
+function playerdraw(){
+  // SENDS LIST OF PLAYERS TO ALL PLAYERS
+  io.sockets.emit('state', players);
+} setInterval(playerdraw,1000/60);*/
