@@ -31,7 +31,18 @@ io.on('connection',function(socket){
     players[playerid].x = 300;
     players[playerid].y = 300;
   })
-
+  // WHEN PLAYER MOVES
+  socket.on('movement', function(data) {
+    var player = players[socket.id] || {};
+    if(data.up)   {player.y-=5}
+    if(data.down) {player.y+=5}
+    if(data.left) {player.x-=5}
+    if(data.right){player.x+=5}
+  })
+  // WHEN PLAYER DISCONNECTS
+  socket.on('disconnect',function(){
+    delete players[socket.id];
+  })
 });
 
 setInterval(function(){
