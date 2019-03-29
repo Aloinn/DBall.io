@@ -34,10 +34,14 @@ io.on('connection',function(socket){
   // WHEN PLAYER MOVES
   socket.on('movement', function(data) {
     var player = players[socket.id] || {};
-    if(data.up)   {player.y-=5}
-    if(data.down) {player.y+=5}
-    if(data.left) {player.x-=5}
-    if(data.right){player.x+=5}
+    var speed = data.speed;
+    if((data.up||data.down)&&(data.left||data.right))
+    {speed = Math.sqrt(2*speed^2)}
+
+    if(data.up)   {player.y-=speed}
+    if(data.down) {player.y+=speed}
+    if(data.left) {player.x-=speed}
+    if(data.right){player.x+=speed}
   })
   // WHEN PLAYER DISCONNECTS
   socket.on('disconnect',function(){
