@@ -19,6 +19,11 @@ server.listen(5002, function() {
   console.log('Starting server on port 5002');
 });
 
+// Add the WebSocket Handlers
+io.on('connection', function(socket){
+
+});
+
 setInterval(function(){
   io.sockets.emit('message','Yoo!');
-} , 1000)
+} , 1000);
