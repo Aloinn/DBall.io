@@ -13,7 +13,7 @@ socket.on('state',function(players){
     var player = players[id];
     ctx.beginPath();
     ctx.arc(player.x, player.y, 20, 0, 2 * Math.PI, false);
-    ctx.fillStyle = 'green';
+    ctx.fillStyle = player.color;
     ctx.fill();
     ctx.lineWidth = 3;
     ctx.strokeStyle = '#003300';
@@ -28,7 +28,26 @@ socket.on('state',function(players){
   }
 });
 
-// PLAYER INPUT
+//          PLAYER INPUT
+// MOUSE CLICK
+// CHECK FOR MOUSE INPUT
+canvas.addEventListener("mousedown", doMouseDown, false);
+
+function doMouseDown(event){
+  console.log(getMousePos(canvas,event));
+  socket.emit('mouse', getMousePos(canvas,event));
+}
+
+// GET MOUSE COORDINATES
+function getMousePos(canvas, evt) {
+    var rect = canvas.getBoundingClientRect();
+    return {
+        x: Math.round((evt.clientX - rect.left) / (rect.right - rect.left) * canvas.width),
+        y: Math.round((evt.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height)
+    };
+}
+// WASD
+// MOVEMENT OBJECT
 var movement = {
   up:false,
   down:false,
@@ -36,14 +55,7 @@ var movement = {
   left:false,
   speed:5
 }
-// MOUSE CLICK
-function getMousePos(canvas, evt) {
-    var rect = canvas.getBoundingClientRect();
-    return {
-        x: (evt.clientX - rect.left) / (rect.right - rect.left) * canvas.width,
-        y: (evt.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
-    };
-}
+
 // CHECK FOR INPUT
 document.addEventListener("keydown",keyDownHandler,false);
 document.addEventListener("keyup",keyUpHandler,false);
@@ -60,12 +72,7 @@ function keyUpHandler(a){
   if(a.which===68){movement.right = false;}
   if(a.which===83){movement.down = false;}
 }
-// CHECK FOR MOUSE INPUT
-canvas.addEventListener("mousedown", doMouseDown, false);
 
-function doMouseDown(event){
-  console.log(getMousePos(canvas,event));
-}
 // SEND USER INPUT
 // SENDS A CALL FOR THE 'new player' FLAG TO SERVER
 socket.emit('new player');

@@ -30,6 +30,13 @@ io.on('connection',function(socket){
     players[playerid] = new Object();
     players[playerid].x = 300;
     players[playerid].y = 300;
+    players[playerid].color = "#"+((1<<24)*Math.random()|0).toString(16);
+  })
+  // WHEN PLAYER CLICKS
+  socket.on('mouse',function(mouse){
+    var player = players[socket.id] || {};
+    player.x = mouse.x;
+    player.y = mouse.y;
   })
   // WHEN PLAYER MOVES
   socket.on('movement', function(data) {
@@ -38,10 +45,10 @@ io.on('connection',function(socket){
     if((data.up||data.down)&&(data.left||data.right))
     {speed = Math.sqrt(2*speed^2)}
 
-    if(data.up)   {player.y-=speed}
-    if(data.down) {player.y+=speed}
-    if(data.left) {player.x-=speed}
-    if(data.right){player.x+=speed}
+    if(data.up    && player.y - speed > 0)            {player.y-=speed}
+    if(data.down  && player.y + speed < 600) {player.y+=speed}
+    if(data.left  && player.x - speed > 0)            {player.x-=speed}
+    if(data.right && player.x + speed < 800)  {player.x+=speed}
   })
   // WHEN PLAYER DISCONNECTS
   socket.on('disconnect',function(){
