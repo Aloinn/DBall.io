@@ -19,8 +19,61 @@ server.listen(5002, function() {
   console.log('Starting server on port 5002');
 });
 
-// INIT LIST OF PLAYERS
+// INIT VARIABLES
+var cwidth = 800;
+var cheight = 600;
+
+// INIT LIST OF PLAYERS & BALLS
 var players = {};
+var balls = [];
+var numBalls = 3;
+var gameSpeed = 1000/60;
+// SPAWN BALLS
+for(var i = 0; i < numBalls; i++){
+  balls[i] = new Object();
+  balls[i].type = 'ball';
+  balls[i].x = cwidth*(1+i)/(numBalls+1);
+  balls[i].dx = 0;
+  balls[i].y = cheight/2;
+  balls[i].dy = 0;
+  balls[i].color = "#00000";
+  balls[i].owner = null;
+  players['ball'+i.toString()] = balls[i];
+}
+
+// STEP BALLS
+setInterval(function(){
+  for(var i = 0; i < numBalls; i++){
+    var ball = balls[i];
+    if(ball.owner === null){
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+    } else {
+      var player = ball.owner;
+      ball.x = player.x+ player.angleN*(45*Math.cos(player.angle+(Math.PI/4)));
+      ball.y = player.y+ player.angleN*(45*Math.sin(player.angle+(Math.PI/4)));
+    }
+  }
+}, gameSpeed);
+
+// STEP PLAYERS
+setInterval(function(){
+  // ITERATES ALL PLAYERS
+  for(var id in players){
+    var player = players[id];
+    if(player.type === 'player'){
+      // IF ONE OF THE NUM OF BALLS TOUCHES PLAYER, PLAYER OWNS IT
+      for(var i = 0; i < numBalls; i++){
+        var ball = balls[i];
+        if(Math.abs(ball.x - player.x)<30 && Math.abs(ball.y - player.y)<30){
+          ball.owner = player;
+        }
+      }
+
+    }
+    //if()
+  }
+}, gameSpeed);
 
 io.on('connection',function(socket){
   // WHEN NEW PLAYER JOINS
@@ -28,27 +81,36 @@ io.on('connection',function(socket){
     // CREATE A NEW PLAYER WITH x AND y VARIABLES
     playerid = socket.id;
     players[playerid] = new Object();
+    players[playerid].type = 'player';
     players[playerid].x = 300;
     players[playerid].y = 300;
     players[playerid].color = "#"+((1<<24)*Math.random()|0).toString(16);
+    players[playerid].ball = null;
+    players[playerid].angle = 0;
   })
   // WHEN PLAYER CLICKS
-  socket.on('mouse',function(mouse){
-    var player = players[socket.id] || {};
-    player.x = mouse.x;
-    player.y = mouse.y;
+  socket.on('mouse',function(){
+
   })
   // WHEN PLAYER MOVES
-  socket.on('movement', function(data) {
+  socket.on('input', function(data) {
     var player = players[socket.id] || {};
+    // MOVEMENT
     var speed = data.speed;
     if((data.up||data.down)&&(data.left||data.right))
     {speed = Math.sqrt(2*speed^2)}
 
     if(data.up    && player.y - speed > 0)            {player.y-=speed}
-    if(data.down  && player.y + speed < 600) {player.y+=speed}
+    if(data.down  && player.y + speed < cheight) {player.y+=speed}
     if(data.left  && player.x - speed > 0)            {player.x-=speed}
-    if(data.right && player.x + speed < 800)  {player.x+=speed}
+    if(data.right && player.x + speed < cwidth)  {player.x+=speed}
+
+    // DIRECTION FACING
+    var distx = data.mouseX - player.x;
+    var disty = data.mouseY - player.y;
+    //var disty = player.y - data.mouseY;
+    player.angle = Math.atan(disty/distx);
+    player.angleN = Math.sign(data.mouseX - player.x);
   })
   // WHEN PLAYER DISCONNECTS
   socket.on('disconnect',function(){
@@ -56,39 +118,8 @@ io.on('connection',function(socket){
   })
 });
 
+// SENDS DRAW FLAG TO ALL CLIENTS
 setInterval(function(){
+  //var objects = balls.concat(players);
   io.sockets.emit('state',players);
-},1000/60)
-
-/*
-io.on('connection', function(socket){
-  // NEW PLAYER JOINS
-  io.on('newplayer',function(){
-    io.sockets.emit('message','hi');
-    players[socket.id] = {
-      x: 300,
-      y: 300
-    };
-    /*
-    var idp = socket.id;
-    players[idp] = new Object();
-    players[idp].x = 300;
-    players[idp].y = 300;
-  });
-
-  // PLAYER MOVEMENT CHECKS
-  io.on('movement',function(data){
-    // (data refers to the movement function of client)
-    var player = players[socket.id] || {};
-    if(data.left) {player.x -=5;}
-    if(data.right){player.x +=5;}
-    if(data.up) {player.y -=5;}
-    if(data.down){player.y +=5;}
-  });
-});
-
-// SEND THE FLAG FOR THE PLAYER TO DRAW THE GAME
-function playerdraw(){
-  // SENDS LIST OF PLAYERS TO ALL PLAYERS
-  io.sockets.emit('state', players);
-} setInterval(playerdraw,1000/60);*/
+},gameSpeed)
