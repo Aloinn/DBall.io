@@ -37,7 +37,7 @@ for(var i = 0; i < numBalls; i++){
   balls[i].y = cheight/2;
   balls[i].dy = 0;
   balls[i].color = "#00000";
-  balls[i].owner = null;
+  balls[i].owner = undefined;
   players['ball'+i.toString()] = balls[i];
 }
 
@@ -45,13 +45,13 @@ for(var i = 0; i < numBalls; i++){
 setInterval(function(){
   for(var i = 0; i < numBalls; i++){
     var ball = balls[i];
-    if(ball.owner === null){
+    if(ball.owner === undefined){
       ball.x += ball.dx;
       ball.y += ball.dy;
     } else {
       var player = ball.owner;
-      ball.x = player.x+ player.angleN*(45*Math.cos(player.angle+(Math.PI/4)));
-      ball.y = player.y+ player.angleN*(45*Math.sin(player.angle+(Math.PI/4)));
+      ball.x = player.x+ player.angleN*(35*Math.cos(player.angle+(Math.PI/4)));
+      ball.y = player.y+ player.angleN*(35*Math.sin(player.angle+(Math.PI/4)));
     }
   }
 }, gameSpeed);
@@ -61,17 +61,19 @@ setInterval(function(){
   // ITERATES ALL PLAYERS
   for(var id in players){
     var player = players[id];
-    if(player.type === 'player'){
+    if(player.type === 'player' && player.ball === false){
       // IF ONE OF THE NUM OF BALLS TOUCHES PLAYER, PLAYER OWNS IT
+      // ITERATES THROUGH BALLS
       for(var i = 0; i < numBalls; i++){
         var ball = balls[i];
-        if(Math.abs(ball.x - player.x)<30 && Math.abs(ball.y - player.y)<30){
-          ball.owner = player;
+        if(ball.owner === undefined) {
+          if(Math.abs(ball.x - player.x)<30 && Math.abs(ball.y - player.y)<30){
+            ball.owner = player;
+            player.ball = true;
+          }
         }
       }
-
     }
-    //if()
   }
 }, gameSpeed);
 
@@ -85,7 +87,7 @@ io.on('connection',function(socket){
     players[playerid].x = 300;
     players[playerid].y = 300;
     players[playerid].color = "#"+((1<<24)*Math.random()|0).toString(16);
-    players[playerid].ball = null;
+    players[playerid].ball = false;
     players[playerid].angle = 0;
   })
   // WHEN PLAYER CLICKS
