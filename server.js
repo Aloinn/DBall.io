@@ -50,8 +50,18 @@ setInterval(function(){
       ball.y += ball.dy;
     } else {
       var player = ball.owner;
-      ball.x = player.x+ player.angleN*(35*Math.cos(player.angle+(Math.PI/4)));
-      ball.y = player.y+ player.angleN*(35*Math.sin(player.angle+(Math.PI/4)));
+      // SET POSITION FOR THE BALL RELATIVE TO DIRECTION PLAYER FACSE
+      ball.x = player.x+ player.angleN*(35*Math.cos(player.angle+(player.charge*Math.PI/4)));
+      ball.y = player.y+ player.angleN*(35*Math.sin(player.angle+(player.charge*Math.PI/4)));
+      // IF PLAYER JUST THREW THIS BALL
+      if(player.ball === false){
+        ball.x = player.x+ player.angleN*(35*Math.cos(player.angle));
+        ball.y = player.y+ player.angleN*(35*Math.sin(player.angle));
+        ball.dx = player.angleN*(player.charge*Math.cos(player.angle));
+        ball.dy = player.angleN*(player.charge*Math.sin(player.angle));
+        ball.owner = undefined;
+        player.charge = 1;
+      }
     }
   }
 }, gameSpeed);
@@ -61,6 +71,17 @@ setInterval(function(){
   // ITERATES ALL PLAYERS
   for(var id in players){
     var player = players[id];
+    // CHARGE UP THROW
+    if(player.charging === true){
+      if(player.charge < 2){
+        player.charge+= 0.005;
+        player.speed = player.speedmax - player.charge*2;
+      }
+    } else {
+    // IF NOT CHARGING UP THROW
+    player.speed = player.speedmax;
+    }
+    // CHECK BALL PICKUP
     if(player.type === 'player' && player.ball === false){
       // IF ONE OF THE NUM OF BALLS TOUCHES PLAYER, PLAYER OWNS IT
       // ITERATES THROUGH BALLS
@@ -89,23 +110,33 @@ io.on('connection',function(socket){
     players[playerid].color = "#"+((1<<24)*Math.random()|0).toString(16);
     players[playerid].ball = false;
     players[playerid].angle = 0;
+    players[playerid].charge = 1;
+    players[playerid].charging = false;
+    players[playerid].speed = 5;
+    players[playerid].speedmax = 5;
   })
   // WHEN PLAYER CLICKS
-  socket.on('mouse',function(){
-
+  socket.on('mouse',function(bool){
+    var player = players[socket.id] || {};
+    if(bool){ // STARTED CHARGING
+      player.charging = true;
+    } else { // DONE CHARGING
+      player.ball = false;
+      player.charging = false;
+    }
   })
   // WHEN PLAYER MOVES
   socket.on('input', function(data) {
     var player = players[socket.id] || {};
     // MOVEMENT
-    var speed = data.speed;
+    var speed = player.speed;
     if((data.up||data.down)&&(data.left||data.right))
-    {speed = Math.sqrt(2*speed^2)}
+    {speed = Math.max(Math.sqrt(2*((1.5*speed)^2)),1)}
 
     if(data.up    && player.y - speed > 0)            {player.y-=speed}
-    if(data.down  && player.y + speed < cheight) {player.y+=speed}
+    if(data.down  && player.y + speed < cheight)      {player.y+=speed}
     if(data.left  && player.x - speed > 0)            {player.x-=speed}
-    if(data.right && player.x + speed < cwidth)  {player.x+=speed}
+    if(data.right && player.x + speed < cwidth)       {player.x+=speed}
 
     // DIRECTION FACING
     var distx = data.mouseX - player.x;
@@ -116,6 +147,9 @@ io.on('connection',function(socket){
   })
   // WHEN PLAYER DISCONNECTS
   socket.on('disconnect',function(){
+    var player = players[socket.id] || {};
+    player.charge = 0;
+    player.ball = false;
     delete players[socket.id];
   })
 });

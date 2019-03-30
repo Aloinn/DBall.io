@@ -9,8 +9,8 @@ var ctx = canvas.getContext("2d");
 function drawhands(object){
   ctx.beginPath();
   ctx.arc(
-    object.x+ object.angleN*(25*Math.cos(object.angle+(Math.PI/4))),
-    object.y+ object.angleN*(25*Math.sin(object.angle+(Math.PI/4))),
+    object.x+ object.angleN*(25*Math.cos(object.angle+(object.charge*Math.PI/4))),
+    object.y+ object.angleN*(25*Math.sin(object.angle+(object.charge*Math.PI/4))),
     10, 0, 2 * Math.PI, false);
   ctx.fillStyle = object.color;
   ctx.fill();
@@ -20,8 +20,8 @@ function drawhands(object){
 
   ctx.beginPath();
   ctx.arc(
-    object.x+ object.angleN*(25*Math.cos(object.angle-(Math.PI/4))),
-    object.y+ object.angleN*(25*Math.sin(object.angle-(Math.PI/4))),
+    object.x+ object.angleN*(25*Math.cos(object.angle-(object.charging ? (Math.PI/5) : (Math.PI/4)))),
+    object.y+ object.angleN*(25*Math.sin(object.angle-(object.charging ? (Math.PI/5) : (Math.PI/4)))),
     10, 0, 2 * Math.PI, false);
   ctx.fillStyle = object.color;
   ctx.fill();
@@ -65,12 +65,16 @@ socket.on('state',function(objects){
 //          PLAYER INPUT
 // MOUSE CLICK
 // CHECK FOR MOUSE INPUT
-canvas.addEventListener("mousedown", doMouseDown, false);
-canvas.addEventListener("mousemove", doMouseMove, false);
+canvas.addEventListener("mousedown",  doMouseDown,  false);
+canvas.addEventListener("mouseup",    doMouseUp,    false)
+canvas.addEventListener("mousemove",  doMouseMove,  false);
 
 function doMouseDown(event){
-  //console.log(getMousePos(canvas,event));
-  //socket.emit('mouse', getMousePos(canvas,event));
+  socket.emit('mouse', true);
+}
+
+function doMouseUp(event){
+  socket.emit('mouse', false);
 }
 
 // GET MOUSE COORDINATES
@@ -89,7 +93,6 @@ var input = {
   left:false,
   mouseX: 0,
   mouseY: 0,
-  speed:5
 }
 
 // CHECK FOR INPUT
