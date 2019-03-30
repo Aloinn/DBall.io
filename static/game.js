@@ -20,8 +20,8 @@ function drawhands(object){
 
   ctx.beginPath();
   ctx.arc(
-    object.x+ object.angleN*(25*Math.cos(object.angle-(object.charging ? (Math.PI/5) : (Math.PI/4)))),
-    object.y+ object.angleN*(25*Math.sin(object.angle-(object.charging ? (Math.PI/5) : (Math.PI/4)))),
+    object.x+ object.angleN*(25*Math.cos(object.angle-(object.charging ? (Math.PI/8) : (Math.PI/4)))),
+    object.y+ object.angleN*(25*Math.sin(object.angle-(object.charging ? (Math.PI/8) : (Math.PI/4)))),
     10, 0, 2 * Math.PI, false);
   ctx.fillStyle = object.color;
   ctx.fill();
@@ -68,15 +68,19 @@ socket.on('state',function(objects){
 canvas.addEventListener("mousedown",  doMouseDown,  false);
 canvas.addEventListener("mouseup",    doMouseUp,    false)
 canvas.addEventListener("mousemove",  doMouseMove,  false);
+canvas.addEventListener("click",      doMouseClick, false)
 
 function doMouseDown(event){
-  socket.emit('mouse', true);
+  socket.emit('mouse', 1);
 }
 
 function doMouseUp(event){
-  socket.emit('mouse', false);
+  socket.emit('mouse', 2);
 }
 
+function doMouseClick(event){
+  socket.emit('mouse', 0);
+}
 // GET MOUSE COORDINATES
 function doMouseMove(event){
   var rect = canvas.getBoundingClientRect();

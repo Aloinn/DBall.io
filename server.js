@@ -26,7 +26,7 @@ var cheight = 600;
 // INIT LIST OF PLAYERS & BALLS
 var players = {};
 var balls = [];
-var numBalls = 3;
+var numBalls = 5;
 var gameSpeed = 1000/60;
 // SPAWN BALLS
 for(var i = 0; i < numBalls; i++){
@@ -55,10 +55,10 @@ setInterval(function(){
       ball.y = player.y+ player.angleN*(35*Math.sin(player.angle+(player.charge*Math.PI/4)));
       // IF PLAYER JUST THREW THIS BALL
       if(player.ball === false){
-        ball.x = player.x+ player.angleN*(35*Math.cos(player.angle));
-        ball.y = player.y+ player.angleN*(35*Math.sin(player.angle));
-        ball.dx = player.angleN*(player.charge*Math.cos(player.angle));
-        ball.dy = player.angleN*(player.charge*Math.sin(player.angle));
+        ball.x = player.x+ player.angleN*(50*Math.cos(player.angle));
+        ball.y = player.y+ player.angleN*(50*Math.sin(player.angle));
+        ball.dx = 10*player.angleN*(player.charge)*player.charge*Math.cos(player.angle);
+        ball.dy = 10*player.angleN*(player.charge)*player.charge*Math.sin(player.angle);
         ball.owner = undefined;
         player.charge = 1;
       }
@@ -75,7 +75,7 @@ setInterval(function(){
     if(player.charging === true){
       if(player.charge < 2){
         player.charge+= 0.005;
-        player.speed = player.speedmax - player.charge*2;
+        player.speed = player.speedmax/(player.charge*player.charge);
       }
     } else {
     // IF NOT CHARGING UP THROW
@@ -116,13 +116,21 @@ io.on('connection',function(socket){
     players[playerid].speedmax = 5;
   })
   // WHEN PLAYER CLICKS
-  socket.on('mouse',function(bool){
+  socket.on('mouse',function(click){
     var player = players[socket.id] || {};
-    if(bool){ // STARTED CHARGING
-      player.charging = true;
-    } else { // DONE CHARGING
-      player.ball = false;
-      player.charging = false;
+    switch(click){
+      case 0:
+        player.charging = true;
+        player.ball = false;
+        player.charging = false;
+        break;
+      case 1:
+        player.charging = true;
+        break;
+      case 2:
+        player.ball = false;
+        player.charging = false;
+        break;
     }
   })
   // WHEN PLAYER MOVES
