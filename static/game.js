@@ -9,8 +9,8 @@ var ctx = canvas.getContext("2d");
 function drawhands(object){
   ctx.beginPath();
   ctx.arc(
-    object.x+ object.angleN*(25*Math.cos(object.angle+(object.charge*Math.PI/4))),
-    object.y+ object.angleN*(25*Math.sin(object.angle+(object.charge*Math.PI/4))),
+    object.x+ object.angleN*(25*Math.cos(object.angle+(Math.PI/4)+((object.charge-1)*Math.PI/2))),
+    object.y+ object.angleN*(25*Math.sin(object.angle+(Math.PI/4)+((object.charge-1)*Math.PI/2))),
     10, 0, 2 * Math.PI, false);
   ctx.fillStyle = object.color;
   ctx.fill();
@@ -48,6 +48,8 @@ function render(object){
     ctx.arc(object.x, object.y, 10, 0, 2 * Math.PI, false);
     ctx.fillStyle = "#efefef";
     ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'black';
     ctx.stroke();
   }
 }
@@ -56,6 +58,12 @@ function render(object){
 socket.on('state',function(objects){
   //CLEAR RECTANGLE
   ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.beginPath();
+  ctx.moveTo(0,canvas.height/2);
+  ctx.lineTo(canvas.width,canvas.height/2);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "black";
+  ctx.stroke();
   for(var id in objects){
     var object = objects[id];
     render(object);

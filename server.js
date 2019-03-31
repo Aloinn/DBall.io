@@ -46,13 +46,37 @@ setInterval(function(){
   for(var i = 0; i < numBalls; i++){
     var ball = balls[i];
     if(ball.owner === undefined){
-      ball.x += ball.dx;
-      ball.y += ball.dy;
+      // CHECK FOR BALL BOUNCE ON X
+      if(ball.x + ball.dx < 0 || ball.x + ball.dx > cwidth){
+        ball.dx = -ball.dx;
+        ball.dy*= 0.5;
+        ball.dx *= 0.5;
+      } else {// OTHERWISE FOLLOW SPEED
+        ball.x += ball.dx;
+        ball.dx *= 0.99
+      }
+
+      // CHECK FOR BALL BOUNCE ON Y
+      if(ball.y + ball.dy < 0 || ball.y + ball.dy > cheight){
+        ball.dy = -ball.dy;
+        ball.dy*= 0.5;
+        ball.dx *=0.5;
+      } else { // OTHERWISE FOLLOW SPEED
+        ball.y += ball.dy;
+        ball.dy *= 0.99
+      }
+
+      // DAMPEN SPEED IF TOTAL SPEED IS LESS THAN 2
+      var spd = Math.sqrt(Math.pow(ball.dy,2)+Math.pow(ball.dx,2));
+      if(spd < 0.2){
+        ball.dy = 0;
+        ball.dx = 0;
+      }
     } else {
       var player = ball.owner;
       // SET POSITION FOR THE BALL RELATIVE TO DIRECTION PLAYER FACSE
-      ball.x = player.x+ player.angleN*(35*Math.cos(player.angle+(player.charge*Math.PI/4)));
-      ball.y = player.y+ player.angleN*(35*Math.sin(player.angle+(player.charge*Math.PI/4)));
+      ball.x = player.x+ player.angleN*(35*Math.cos(player.angle+(Math.PI/4)+((player.charge-1)*Math.PI/2)));
+      ball.y = player.y+ player.angleN*(35*Math.sin(player.angle+(Math.PI/4)+((player.charge-1)*Math.PI/2)));
       // IF PLAYER JUST THREW THIS BALL
       if(player.ball === false){
         ball.x = player.x+ player.angleN*(50*Math.cos(player.angle));
@@ -125,7 +149,9 @@ io.on('connection',function(socket){
         player.charging = false;
         break;
       case 1:
-        player.charging = true;
+        if(player.ball === true){
+          player.charging = true;
+        }
         break;
       case 2:
         player.ball = false;
