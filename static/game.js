@@ -6,6 +6,7 @@ canvas.width = 800;
 canvas.height = 600;
 var ctx = canvas.getContext("2d");
 
+// DRAW HANDS FOR THE PLAYER
 function drawhands(object){
   ctx.beginPath();
   ctx.arc(
@@ -28,7 +29,28 @@ function drawhands(object){
   ctx.lineWidth = 3;
   ctx.strokeStyle = 'black';
   ctx.stroke();
+}
 
+// DRAW MAIN BODY
+function drawbody(object){
+      ctx.beginPath();
+      ctx.arc(object.x, object.y, 20, 0, 2 * Math.PI, false);
+      ctx.fillStyle = object.color;
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'black';
+      ctx.stroke();
+}
+// DRAW CHARGE
+function drawcharge(object){
+  ctx.beginPath();
+  ctx.rect(object.x-45, object.y+30, 15, (object.charge-1)*-60 );
+  ctx.fillStyle = object.color;
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'black';
+  ctx.stroke();
+  ctx.closePatH();
 }
 // RENDER FUNCTION TO READ OMMITTED DATA
 function render(object){
@@ -36,13 +58,12 @@ function render(object){
   if(object.type === 'player'){
     console.log(object.angle*180/Math.PI);
     drawhands(object);
-    ctx.beginPath();
-    ctx.arc(object.x, object.y, 20, 0, 2 * Math.PI, false);
-    ctx.fillStyle = object.color;
-    ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'black';
-    ctx.stroke();
+
+    drawbody(object);
+    if(object.charging === true)
+    {drawcharge(object);}
+
+
   } else if(object.type === 'ball'){
     ctx.beginPath();
     ctx.arc(object.x, object.y, 10, 0, 2 * Math.PI, false);
@@ -59,8 +80,8 @@ socket.on('state',function(objects){
   //CLEAR RECTANGLE
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.beginPath();
-  ctx.moveTo(0,canvas.height/2);
-  ctx.lineTo(canvas.width,canvas.height/2);
+  ctx.moveTo(canvas.width/2,0);
+  ctx.lineTo(canvas.width/2,canvas.height);
   ctx.lineWidth = 3;
   ctx.strokeStyle = "black";
   ctx.stroke();
