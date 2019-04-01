@@ -124,10 +124,11 @@ setInterval(function(){
 
 io.on('connection',function(socket){
   // WHEN NEW PLAYER JOINS
-  socket.on('new player',function(){
+  socket.on('new player',function(name){
     // CREATE A NEW PLAYER WITH x AND y VARIABLES
     playerid = socket.id;
     players[playerid] = new Object();
+    players[playerid].name = name;
     players[playerid].type = 'player';
     players[playerid].x = 300;
     players[playerid].y = 300;

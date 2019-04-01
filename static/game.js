@@ -1,10 +1,18 @@
 var socket = io();
+// PLAYING
+var states = {
+  menu: 0,
+  playing: 1,
+  dead: 2
+}
+Object.freeze(state);
 
 // DISPLAY
 var canvas = document.getElementById("myCanvas");
 canvas.width = 800;
 canvas.height = 600;
 var ctx = canvas.getContext("2d");
+var state = states.menu;
 
 // DRAW HANDS FOR THE PLAYER
 function drawhands(object){
@@ -41,6 +49,12 @@ function drawbody(object){
       ctx.strokeStyle = 'black';
       ctx.stroke();
 }
+// DRAW NAME
+function drawname(object){
+  ctx.font = "16px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(object.name, object.x, object.y+60);
+}
 // DRAW CHARGE
 function drawcharge(object){
   ctx.beginPath();
@@ -50,18 +64,15 @@ function drawcharge(object){
   ctx.lineWidth = 3;
   ctx.strokeStyle = 'black';
   ctx.stroke();
-  ctx.closePatH();
 }
 // RENDER FUNCTION TO READ OMMITTED DATA
 function render(object){
-  // DRAW TEXTBOX
-  input.render();
   // IF OBJECT IS A PLAYER, DRAW THIS WAY
   if(object.type === 'player'){
-    //console.log(object.angle*180/Math.PI);
     drawhands(object);
-
     drawbody(object);
+    drawname(object);
+
     if(object.charging === true)
     {drawcharge(object);}
 
@@ -76,22 +87,6 @@ function render(object){
     ctx.stroke();
   }
 }
-
-// DRAW THE CLIENT SCREEN BY DRAWING ALL PLAYER INSTANCES
-socket.on('state',function(objects){
-  //CLEAR RECTANGLE
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.beginPath();
-  ctx.moveTo(canvas.width/2,0);
-  ctx.lineTo(canvas.width/2,canvas.height);
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = "black";
-  ctx.stroke();
-  for(var id in objects){
-    var object = objects[id];
-    render(object);
-  }
-});
 
 //          PLAYER INPUT
 // MOUSE CLICK
@@ -148,30 +143,60 @@ function keyUpHandler(a){
 }
 
 // INPUT BOX
-
-var input = new CanvasInput({
+ctx.textAlign = "center";
+var textinput = new CanvasInput({
   canvas: document.getElementById('myCanvas'),
   fontSize: 18,
   fontFamily: 'Arial',
   fontColor: '#212121',
   fontWeight: 'bold',
-  width: 200,
-  padding: 8,
-  borderWidth: 1,
+  width: 300,
+  x: (canvas.width/2) - 155,
+  y: (canvas.height/2),
+  padding: 5,
+  borderWidth: 3,
   borderColor: '#000',
-  borderRadius: 3,
-  placeHolder: 'Enter name here'
+  borderRadius: 0,
+  boxShadow: '0px 0px 0px #fff',
+  innerShadow: '0px 0px 0px rgba(0, 0, 0, 0.5)',
+  textAlign: 'center',
+  placeHolder: 'Name here',
+  maxlength:16,
 });
 
 // SEND USER INPUT
 // SENDS A CALL FOR THE 'new player' FLAG TO SERVER
-socket.emit('new player');
+textinput.render();
 
-// SENDS A CALL FOR 'input' WHICH DATA CONCERNING input
-setInterval(function() {
-  socket.emit('input', input);
-  //console.log(input);
-}, 1000/60);
+textinput.onsubmit(function(){
+  state = states.playing;
+  socket.emit('new player', textinput.value());
+  textinput.destroy();
+  // SENDS A CALL FOR 'input' WHICH DATA CONCERNING input
+  setInterval(function() {
+    socket.emit('input', input);
+    //console.log(input);
+  }, 1000/60);
+});
+
+// DRAW THE CLIENT SCREEN BY DRAWING ALL PLAYER INSTANCES
+socket.on('state',function(objects){
+  if(state === states.playing)
+  {
+    //CLEAR RECTANGLE
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.beginPath();
+    ctx.moveTo(canvas.width/2,0);
+    ctx.lineTo(canvas.width/2,canvas.height);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "black";
+    ctx.stroke();
+    for(var id in objects){
+      var object = objects[id];
+      render(object);
+    }
+  }
+});
 
 //DEBUG
 socket.on('message', function(data) {
