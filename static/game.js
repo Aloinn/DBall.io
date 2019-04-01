@@ -58,7 +58,7 @@ function render(object){
   input.render();
   // IF OBJECT IS A PLAYER, DRAW THIS WAY
   if(object.type === 'player'){
-    console.log(object.angle*180/Math.PI);
+    //console.log(object.angle*180/Math.PI);
     drawhands(object);
 
     drawbody(object);
