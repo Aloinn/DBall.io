@@ -54,6 +54,8 @@ function drawcharge(object){
 }
 // RENDER FUNCTION TO READ OMMITTED DATA
 function render(object){
+  // DRAW TEXTBOX
+  input.render();
   // IF OBJECT IS A PLAYER, DRAW THIS WAY
   if(object.type === 'player'){
     console.log(object.angle*180/Math.PI);
@@ -144,6 +146,22 @@ function keyUpHandler(a){
   if(a.which===68){input.right = false;}
   if(a.which===83){input.down = false;}
 }
+
+// INPUT BOX
+
+var input = new CanvasInput({
+  canvas: document.getElementById('myCanvas'),
+  fontSize: 18,
+  fontFamily: 'Arial',
+  fontColor: '#212121',
+  fontWeight: 'bold',
+  width: 200,
+  padding: 8,
+  borderWidth: 1,
+  borderColor: '#000',
+  borderRadius: 3,
+  placeHolder: 'Enter name here'
+});
 
 // SEND USER INPUT
 // SENDS A CALL FOR THE 'new player' FLAG TO SERVER
