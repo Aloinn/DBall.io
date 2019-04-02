@@ -10,12 +10,21 @@ Object.freeze(state);
 
 // DISPLAY
 var canvas = document.getElementById("myCanvas");
-canvas.width = canvas.clientWidth;
-canvas.height = canvas.clientHeight;
-var ratioX = canvas.width/800;
-var ratioY = canvas.height/600;
-var ratio  = Math.min(ratioX,ratioY);
 var ctx = canvas.getContext("2d");
+var ratioX = 0;
+var ratioY = 0;
+var ratio = 0;
+// SETTING UP THE CANVAS ASPECT RATIOS
+function canvasetup(){
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+  ratioX = canvas.width/800;
+  ratioY = canvas.height/600;
+  ratio  = Math.min(ratioX,ratioY);
+}
+window.addEventListener('resize',canvasetup);
+canvasetup();
+
 var state = states.menu;
 
 // DRAW HANDS FOR THE PLAYER
@@ -62,7 +71,7 @@ function drawname(object){
 // DRAW CHARGE
 function drawcharge(object){
   ctx.beginPath();
-  ctx.rect((object.x*ratioX)-45, (object.y*ratioY)+30, 15, (object.charge-1)*-(60*ratio) );
+  ctx.rect((object.x*ratioX)-(45*ratio), (object.y*ratioY)+(30*ratio), 15*(ratio), (object.charge-1)*-(60*ratio) );
   ctx.fillStyle = object.color;
   ctx.fill();
   ctx.lineWidth = 3*ratio;
