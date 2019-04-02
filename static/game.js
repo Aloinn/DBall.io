@@ -1,3 +1,4 @@
+// ESTABLISH CONNECTION
 var socket = io();
 // PLAYING
 var states = {
@@ -65,6 +66,16 @@ function drawcharge(object){
   ctx.strokeStyle = 'black';
   ctx.stroke();
 }
+// DRAW BALL
+function drawball(object){
+  ctx.beginPath();
+  ctx.arc(object.x, object.y, 10, 0, 2 * Math.PI, false);
+  ctx.fillStyle = "#efefef";
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'black';
+  ctx.stroke();
+}
 // RENDER FUNCTION TO READ OMMITTED DATA
 function render(object){
   // IF OBJECT IS A PLAYER, DRAW THIS WAY
@@ -76,15 +87,8 @@ function render(object){
     if(object.charging === true)
     {drawcharge(object);}
 
-
   } else if(object.type === 'ball'){
-    ctx.beginPath();
-    ctx.arc(object.x, object.y, 10, 0, 2 * Math.PI, false);
-    ctx.fillStyle = "#efefef";
-    ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'black';
-    ctx.stroke();
+    drawball(object);
   }
 }
 
@@ -185,12 +189,14 @@ socket.on('state',function(objects){
   {
     //CLEAR RECTANGLE
     ctx.clearRect(0,0,canvas.width,canvas.height);
+    // DRAW HALF CUTTING LINE
     ctx.beginPath();
     ctx.moveTo(canvas.width/2,0);
     ctx.lineTo(canvas.width/2,canvas.height);
     ctx.lineWidth = 3;
     ctx.strokeStyle = "black";
     ctx.stroke();
+    // DRAW EACH INDIVIDUAL OBJECT
     for(var id in objects){
       var object = objects[id];
       render(object);
