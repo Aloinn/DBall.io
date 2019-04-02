@@ -3,15 +3,27 @@
     <title>DBall.io</title>
     <link rel="shortcut icon" href="/static/dball.ico"> <!-- Add icon here -->
     <style>
+      *{
+        margin:0px;
+      }
       .canvas-container{
         width:100%;
+        height:auto;
         text-align: center;
-        margin-top:50px;
       }
       canvas {
-        width: 800px;
-        height: 600px;
-        border: 5px solid black;
+        width: 100%;
+        height: 100%;
+      }
+      a{
+        text-decoration: none;
+        color: black;
+      }
+      nav{
+        position: absolute;
+        left:50%;
+        top:50%;
+
       }
     </style>
     <script src="/socket.io/socket.io.js"></script>
@@ -20,6 +32,11 @@
   <body>
     <div class="canvas-container">
       <canvas id="myCanvas"></canvas>
+      <nav>
+      <a href="#" onClick="startGame()">Play solo</a>
+      <a href="#">Create room</a>
+      <a href="#">Join room</a>
+      </nav>
     </div>
   </body>
   <script src="/static/game.js"></script>

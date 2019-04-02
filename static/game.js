@@ -10,8 +10,10 @@ Object.freeze(state);
 
 // DISPLAY
 var canvas = document.getElementById("myCanvas");
-canvas.width = 800;
-canvas.height = 600;
+canvas.width = canvas.clientWidth;
+canvas.height = canvas.clientHeight;
+var ratioX = canvas.width/800;
+var ratioY = canvas.height/600;
 var ctx = canvas.getContext("2d");
 var state = states.menu;
 
@@ -19,8 +21,8 @@ var state = states.menu;
 function drawhands(object){
   ctx.beginPath();
   ctx.arc(
-    object.x+ object.angleN*(25*Math.cos(object.angle+(Math.PI/4)+((object.charge-1)*Math.PI/2))),
-    object.y+ object.angleN*(25*Math.sin(object.angle+(Math.PI/4)+((object.charge-1)*Math.PI/2))),
+    (object.x*ratioX)+ object.angleN*(25*Math.cos(object.angle+(Math.PI/4)+((object.charge-1)*Math.PI/2))),
+    (object.y*ratioY)+ object.angleN*(25*Math.sin(object.angle+(Math.PI/4)+((object.charge-1)*Math.PI/2))),
     10, 0, 2 * Math.PI, false);
   ctx.fillStyle = object.color;
   ctx.fill();
@@ -30,8 +32,8 @@ function drawhands(object){
 
   ctx.beginPath();
   ctx.arc(
-    object.x+ object.angleN*(25*Math.cos(object.angle-(object.charging ? (Math.PI/8) : (Math.PI/4)))),
-    object.y+ object.angleN*(25*Math.sin(object.angle-(object.charging ? (Math.PI/8) : (Math.PI/4)))),
+    (object.x*ratioX)+ object.angleN*(25*Math.cos(object.angle-(object.charging ? (Math.PI/8) : (Math.PI/4)))),
+    (object.y*ratioY)+ object.angleN*(25*Math.sin(object.angle-(object.charging ? (Math.PI/8) : (Math.PI/4)))),
     10, 0, 2 * Math.PI, false);
   ctx.fillStyle = object.color;
   ctx.fill();
@@ -43,7 +45,7 @@ function drawhands(object){
 // DRAW MAIN BODY
 function drawbody(object){
       ctx.beginPath();
-      ctx.arc(object.x, object.y, 20, 0, 2 * Math.PI, false);
+      ctx.arc((object.x*ratioX), (object.y*ratioY), 20, 0, 2 * Math.PI, false);
       ctx.fillStyle = object.color;
       ctx.fill();
       ctx.lineWidth = 3;
@@ -54,12 +56,12 @@ function drawbody(object){
 function drawname(object){
   ctx.font = "16px Arial";
   ctx.textAlign = "center";
-  ctx.fillText(object.name, object.x, object.y+60);
+  ctx.fillText(object.name, (object.x*ratioX), (object.y*ratioY)+60);
 }
 // DRAW CHARGE
 function drawcharge(object){
   ctx.beginPath();
-  ctx.rect(object.x-45, object.y+30, 15, (object.charge-1)*-60 );
+  ctx.rect((object.x*ratioX)-45, (object.y*ratioY)+30, 15, (object.charge-1)*-60 );
   ctx.fillStyle = object.color;
   ctx.fill();
   ctx.lineWidth = 3;
@@ -69,7 +71,7 @@ function drawcharge(object){
 // DRAW BALL
 function drawball(object){
   ctx.beginPath();
-  ctx.arc(object.x, object.y, 10, 0, 2 * Math.PI, false);
+  ctx.arc((object.x*ratioX), (object.y*ratioY), 10, 0, 2 * Math.PI, false);
   ctx.fillStyle = "#efefef";
   ctx.fill();
   ctx.lineWidth = 3;
@@ -114,8 +116,8 @@ function doMouseClick(event){
 // GET MOUSE COORDINATES
 function doMouseMove(event){
   var rect = canvas.getBoundingClientRect();
-  input.mouseX = Math.round((event.clientX - rect.left) / (rect.right - rect.left) * canvas.width);
-  input.mouseY = Math.round((event.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height);
+  input.mouseX = Math.round((event.clientX - rect.left) / (rect.right - rect.left) * canvas.width)/ratioX;
+  input.mouseY = Math.round((event.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height)/ratioY;
 }
 
 // WASD
@@ -172,7 +174,9 @@ var textinput = new CanvasInput({
 // SENDS A CALL FOR THE 'new player' FLAG TO SERVER
 textinput.render();
 
-textinput.onsubmit(function(){
+textinput.onsubmit(startGame);
+
+function startGame(){
   state = states.playing;
   socket.emit('new player', textinput.value());
   textinput.destroy();
@@ -181,7 +185,7 @@ textinput.onsubmit(function(){
     socket.emit('input', input);
     //console.log(input);
   }, 1000/60);
-});
+}
 
 // DRAW THE CLIENT SCREEN BY DRAWING ALL PLAYER INSTANCES
 socket.on('state',function(objects){
