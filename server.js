@@ -75,8 +75,9 @@ setInterval(function(){
     } else {
       var player = ball.owner;
       // SET POSITION FOR THE BALL RELATIVE TO DIRECTION PLAYER FACSE
-      ball.x = player.x+ player.angleN*(35*Math.cos(player.angle+(Math.PI/4)+((player.charge-1)*Math.PI/2)));
-      ball.y = player.y+ player.angleN*(35*Math.sin(player.angle+(Math.PI/4)+((player.charge-1)*Math.PI/2)));
+      //ball.x = player.x+ player.angleN*(35*Math.cos(player.angle+(Math.PI/4)+((player.charge-1)*Math.PI/2)));
+      ball.x = player.x;
+      ball.y = player.y;
       // IF PLAYER JUST THREW THIS BALL
       if(player.ball === false){
         ball.x = player.x+ player.angleN*(50*Math.cos(player.angle));

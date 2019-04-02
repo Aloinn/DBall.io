@@ -14,6 +14,7 @@ canvas.width = canvas.clientWidth;
 canvas.height = canvas.clientHeight;
 var ratioX = canvas.width/800;
 var ratioY = canvas.height/600;
+var ratio  = Math.min(ratioX,ratioY);
 var ctx = canvas.getContext("2d");
 var state = states.menu;
 
@@ -21,23 +22,23 @@ var state = states.menu;
 function drawhands(object){
   ctx.beginPath();
   ctx.arc(
-    (object.x*ratioX)+ object.angleN*(25*Math.cos(object.angle+(Math.PI/4)+((object.charge-1)*Math.PI/2))),
-    (object.y*ratioY)+ object.angleN*(25*Math.sin(object.angle+(Math.PI/4)+((object.charge-1)*Math.PI/2))),
-    10, 0, 2 * Math.PI, false);
+    (object.x*ratioX)+ object.angleN*(ratio*25*Math.cos(object.angle+(Math.PI/4)+((object.charge-1)*Math.PI/2))),
+    (object.y*ratioY)+ object.angleN*(ratio*25*Math.sin(object.angle+(Math.PI/4)+((object.charge-1)*Math.PI/2))),
+    10*ratio, 0, 2 * Math.PI, false);
   ctx.fillStyle = object.color;
   ctx.fill();
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 3*ratio;
   ctx.strokeStyle = 'black';
   ctx.stroke();
 
   ctx.beginPath();
   ctx.arc(
-    (object.x*ratioX)+ object.angleN*(25*Math.cos(object.angle-(object.charging ? (Math.PI/8) : (Math.PI/4)))),
-    (object.y*ratioY)+ object.angleN*(25*Math.sin(object.angle-(object.charging ? (Math.PI/8) : (Math.PI/4)))),
-    10, 0, 2 * Math.PI, false);
+    (object.x*ratioX)+ object.angleN*(ratio*25*Math.cos(object.angle-(object.charging ? (Math.PI/8) : (Math.PI/4)))),
+    (object.y*ratioY)+ object.angleN*(ratio*25*Math.sin(object.angle-(object.charging ? (Math.PI/8) : (Math.PI/4)))),
+    10*ratio, 0, 2 * Math.PI, false);
   ctx.fillStyle = object.color;
   ctx.fill();
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 3*ratio;
   ctx.strokeStyle = 'black';
   ctx.stroke();
 }
@@ -45,10 +46,10 @@ function drawhands(object){
 // DRAW MAIN BODY
 function drawbody(object){
       ctx.beginPath();
-      ctx.arc((object.x*ratioX), (object.y*ratioY), 20, 0, 2 * Math.PI, false);
+      ctx.arc((object.x*ratioX), (object.y*ratioY), 20*ratio, 0, 2 * Math.PI, false);
       ctx.fillStyle = object.color;
       ctx.fill();
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3*ratio;
       ctx.strokeStyle = 'black';
       ctx.stroke();
 }
@@ -56,25 +57,33 @@ function drawbody(object){
 function drawname(object){
   ctx.font = "16px Arial";
   ctx.textAlign = "center";
-  ctx.fillText(object.name, (object.x*ratioX), (object.y*ratioY)+60);
+  ctx.fillText(object.name, (object.x*ratioX), (object.y*ratioY)+ (60*ratio));
 }
 // DRAW CHARGE
 function drawcharge(object){
   ctx.beginPath();
-  ctx.rect((object.x*ratioX)-45, (object.y*ratioY)+30, 15, (object.charge-1)*-60 );
+  ctx.rect((object.x*ratioX)-45, (object.y*ratioY)+30, 15, (object.charge-1)*-(60*ratio) );
   ctx.fillStyle = object.color;
   ctx.fill();
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 3*ratio;
   ctx.strokeStyle = 'black';
   ctx.stroke();
 }
 // DRAW BALL
 function drawball(object){
   ctx.beginPath();
-  ctx.arc((object.x*ratioX), (object.y*ratioY), 10, 0, 2 * Math.PI, false);
+
+  if(object.owner != undefined){
+    var player = object.owner;
+    ctx.arc((object.x*ratioX) + player.angleN*(ratio*35*Math.cos(player.angle+(Math.PI/4)+((player.charge-1)*Math.PI/2)))
+        , (object.y*ratioY) + player.angleN*(ratio*35*Math.sin(player.angle+(Math.PI/4)+((player.charge-1)*Math.PI/2)))
+        , 10*ratio, 0, 2 * Math.PI, false);
+  } else {
+    ctx.arc((object.x*ratioX), (object.y*ratioY), 10*ratio, 0, 2*Math.PI, false);
+  }
   ctx.fillStyle = "#efefef";
   ctx.fill();
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 3*ratio;
   ctx.strokeStyle = 'black';
   ctx.stroke();
 }
@@ -197,7 +206,7 @@ socket.on('state',function(objects){
     ctx.beginPath();
     ctx.moveTo(canvas.width/2,0);
     ctx.lineTo(canvas.width/2,canvas.height);
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 3*ratio;
     ctx.strokeStyle = "black";
     ctx.stroke();
     // DRAW EACH INDIVIDUAL OBJECT
