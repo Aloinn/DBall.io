@@ -166,38 +166,17 @@ function keyUpHandler(a){
   if(a.which===83){input.down = false;}
 }
 
-// INPUT BOX
-ctx.textAlign = "center";
-var textinput = new CanvasInput({
-  canvas: document.getElementById('myCanvas'),
-  fontSize: 18,
-  fontFamily: 'Arial',
-  fontColor: '#212121',
-  fontWeight: 'bold',
-  width: 300,
-  x: (canvas.width/2) - 155,
-  y: (canvas.height/2),
-  padding: 5,
-  borderWidth: 3,
-  borderColor: '#000',
-  borderRadius: 0,
-  boxShadow: '0px 0px 0px #fff',
-  innerShadow: '0px 0px 0px rgba(0, 0, 0, 0.5)',
-  textAlign: 'center',
-  placeHolder: 'Name here',
-  maxlength:16,
-});
-
-// SEND USER INPUT
-// SENDS A CALL FOR THE 'new player' FLAG TO SERVER
-textinput.render();
-
-textinput.onsubmit(startGame);
-
+function clearfield(){
+  document.getElementById("name-input").value = "";
+}
+// SENDS A CALL FOR THE 'new player' FLAG TO SERVER on STARTGAME
 function startGame(){
+  var gui = document.getElementById("gui");
+  gui.style.display = "none";
+  var name = document.getElementById("name-input").value;
+  if(name ==="Enter your name here"){name = "Player"}
   state = states.playing;
-  socket.emit('new player', textinput.value());
-  textinput.destroy();
+  socket.emit('new player', name);
   // SENDS A CALL FOR 'input' WHICH DATA CONCERNING input
   setInterval(function() {
     socket.emit('input', input);

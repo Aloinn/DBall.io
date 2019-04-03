@@ -167,7 +167,7 @@ io.on('connection',function(socket){
     // MOVEMENT
     var speed = player.speed;
     if((data.up||data.down)&&(data.left||data.right))
-    {speed = Math.max(Math.sqrt(2*((1.5*speed)^2)),1)}
+    {speed = Math.max(Math.sqrt(2*((1.5*speed)^2)),0.5)}
 
     if(data.up    && player.y - speed > 0)            {player.y-=speed}
     if(data.down  && player.y + speed < cheight)      {player.y+=speed}
