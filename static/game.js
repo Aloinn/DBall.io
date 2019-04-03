@@ -195,7 +195,7 @@ socket.on('renderRoom', function(room){
   }
 });
 
-/*
+
 // SENDS A CALL FOR THE 'new player' FLAG TO SERVER on STARTGAME
 function startGame(){
   var gui = document.getElementById("gui");
@@ -210,7 +210,7 @@ function startGame(){
     //console.log(input);
   }, 1000/60);
 }
-*/
+
 
 // DRAW THE CLIENT SCREEN BY DRAWING ALL PLAYER INSTANCES
 socket.on('state',function(objects){

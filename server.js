@@ -67,6 +67,7 @@ io.on('connection',function(socket){
     rooms[rmnm].state = states.waiting;
     rooms[rmnm].blue = [];
     rooms[rmnm].red = [];
+
     rooms[rmnm].blue.push(player.name);
 
     player.rm = rmnm;
@@ -82,7 +83,7 @@ io.on('connection',function(socket){
     players[playerid].name = name;
     players[playerid].rm = 0;
   });
-  /*
+
   // WHEN NEW PLAYER JOINS
   socket.on('new player',function(name){
     // CREATE A NEW PLAYER WITH x AND y VARIABLES
@@ -100,7 +101,7 @@ io.on('connection',function(socket){
     players[playerid].speed = 5;
     players[playerid].speedmax = 5;
   })
-  */
+
   // WHEN PLAYER CLICKS
   socket.on('mouse',function(click){
     var player = players[socket.id] || {};
