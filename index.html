@@ -22,13 +22,6 @@
         text-decoration: none;
         color: black;
       }
-      nav{
-        position: absolute;
-        width:300;
-        height:135;
-        left:calc(50% - 148px);
-        top:50%;
-      }
       /* PLAY BUTTONS */
       .flex-container {
         padding: 0;
@@ -63,6 +56,14 @@
         text-transform: none;
       }
 
+      #gui{
+        position: absolute;
+        width:300;
+        height:135;
+        left:calc(50% - 148px);
+        top:50%;
+      }
+
       #name-input           { flex: 1;}
       #play-button          { flex: 1 100%; }
       #create-room-button   { flex: 1; margin-right:2px;}
@@ -78,8 +79,31 @@
         font-size: 1.4em;
         letter-spacing: -1px;
         text-align: center;
+      }
+      /* ROOMS */
+      #rooms{
+        display:none;
+        position: absolute;
+        width:500;
+        height:275;
+        left:calc(50% - 248px);
+        top:30%;
+      }
+      #bluteam{
+        background-color: DodgerBlue !important;
+        color:white;
+      }
+      #redteam{
+        background-color: tomato !important;
+        color:white;
+      }
+      #rooms .flex-item{
+        background-color: #efefef;
+        width:235px;
+      }
 
-
+      .flex-container .flex-item.player{
+        color:black;
       }
       /* BUTTON */
     </style>
@@ -90,14 +114,29 @@
   <body>
     <div class="canvas-container">
       <canvas id="myCanvas"></canvas>
-      <nav>
-        <div class="flex-container" id="gui">
-          <input class="flex-item" type="text" onclick="clearfield();" id="name-input" value="Enter your name here" maxlength="16" autofocus>
-          <a href="#" class="flex-item" id="play-button" onClick="startGame()">Play solo</a>
-          <a href="#" class="flex-item" id="create-room-button">Create room</a>
-          <a href="#" class="flex-item" id="join-room-button">Join room</a>
+      <div class="flex-container" id="gui">
+        <input class="flex-item" type="text" onclick="clearfield();" id="name-input" value="Enter your name here" maxlength="16" autofocus>
+        <a href="#" class="flex-item" id="play-button" onClick="startGame()">Play solo</a>
+        <a href="#" class="flex-item" id="create-room-button" onClick="createRoom()">Create room</a>
+        <a href="#" class="flex-item" id="join-room-button">Join room</a>
+      </div>
+      <div class="container">
+        <div class="flex-container" id="rooms" display="none">
+          <a href="#"class="flex-item player" id="bluteam">BLUE</a>
+          <a href="#"class="flex-item player" id="redteam">RED</a>
+          <p class="flex-item player" id="bp1"></p>
+          <p class="flex-item player" id="rp1"></p>
+          <p class="flex-item player" id="bp2"></p>
+          <p class="flex-item player" id="rp2"></p>
+          <p class="flex-item player" id="bp3"></p>
+          <p class="flex-item player" id="rp3"></p>
+          <p class="flex-item player" id="bp4"></p>
+          <p class="flex-item player" id="rp5"></p>
+          <p class="flex-item player" id="bp5"></p>
+          <p class="flex-item player" id="rp5"></p>
+
         </div>
-      </nav>
+      </div>
     </div>
   </body>
   <script src="/static/game.js"></script>

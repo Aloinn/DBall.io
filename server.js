@@ -23,13 +23,162 @@ server.listen(5002, function() {
 var cwidth = 800;
 var cheight = 600;
 
+var states = {
+  "waiting":0,
+  "playing":1,
+  "scoreboard":2,
+}
+Object.freeze(states);
+
+var rooms = {};
+
+// MAKES RANDOM ID
+function makeid() {
+  var text = "";
+  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+  for (var i = 0; i < 4; i++)
+  {text += possible.charAt(Math.floor(Math.random() * possible.length))};
+  return text;
+}
+
+// ITERATES THROUGH ALL ROOMS
+/*
+for(var rmnm in rooms){
+  var room = rooms[rmnm];
+  if(room.state = states.waiting){
+
+  }
+}*/
+
+io.on('connection',function(socket){
+  // PLAYER CREATES A ROOM
+  socket.on('create',function(){
+    // MAKE NEW ROOM ID
+    var rmnm = makeid();
+      // KEEP GENERATING CODE UNTIL ITS COMPLETELY UNIQUE
+    while(typeof rooms[rmnm] != "undefined")
+    {rmnm = makeid();}
+      // ADD ROOM ID TO ROOM LIST
+    var player = players[socket.id]
+    rooms[rmnm] = new Object();
+    rooms[rmnm].players = [];
+    rooms[rmnm].players.push(socket.id);
+    rooms[rmnm].state = states.waiting;
+    rooms[rmnm].blue = [];
+    rooms[rmnm].red = [];
+    rooms[rmnm].blue.push(player.name);
+
+    player.rm = rmnm;
+    socket.join(rmnm);
+
+    io.sockets.in(rmnm).emit('renderRoom',rooms[rmnm]);
+  });
+
+  // NEW CONNECTION
+  socket.on('new connection',function(name){
+    playerid = socket.id;
+    players[playerid] = new Object();
+    players[playerid].name = name;
+    players[playerid].rm = 0;
+  });
+  /*
+  // WHEN NEW PLAYER JOINS
+  socket.on('new player',function(name){
+    // CREATE A NEW PLAYER WITH x AND y VARIABLES
+    playerid = socket.id;
+    players[playerid] = new Object();
+    players[playerid].name = name;
+    players[playerid].type = 'player';
+    players[playerid].x = 300;
+    players[playerid].y = 300;
+    players[playerid].color = "#"+((1<<24)*Math.random()|0).toString(16);
+    players[playerid].ball = false;
+    players[playerid].angle = 0;
+    players[playerid].charge = 1;
+    players[playerid].charging = false;
+    players[playerid].speed = 5;
+    players[playerid].speedmax = 5;
+  })
+  */
+  // WHEN PLAYER CLICKS
+  socket.on('mouse',function(click){
+    var player = players[socket.id] || {};
+    switch(click){
+      case 0:
+        player.charging = true;
+        player.ball = false;
+        player.charging = false;
+        break;
+      case 1:
+        if(player.ball === true){
+          player.charging = true;
+        }
+        break;
+      case 2:
+        player.ball = false;
+        player.charging = false;
+        break;
+    }
+  })
+  // WHEN PLAYER MOVES
+  socket.on('input', function(data) {
+    var player = players[socket.id] || {};
+    // MOVEMENT
+    var speed = player.speed;
+    if((data.up||data.down)&&(data.left||data.right))
+    {speed = Math.max(Math.sqrt(2*((1.5*speed)^2)),0.5)}
+
+    if(data.up    && player.y - speed > 0)            {player.y-=speed}
+    if(data.down  && player.y + speed < cheight)      {player.y+=speed}
+    if(data.left  && player.x - speed > 0)            {player.x-=speed}
+    if(data.right && player.x + speed < cwidth)       {player.x+=speed}
+
+    // DIRECTION FACING
+    var distx = data.mouseX - player.x;
+    var disty = data.mouseY - player.y;
+    //var disty = player.y - data.mouseY;
+    player.angle = Math.atan(disty/distx);
+    player.angleN = Math.sign(data.mouseX - player.x);
+  })
+  // WHEN PLAYER DISCONNECTS SUDDENLY
+  socket.on('disconnect',function(){
+    var player = players[socket.id] || {};
+    // IF PLAYER HAS VARIABLES THEN DELETE THEM
+    if(typeof player.charge != undefined){
+      player.charge = 0;
+      player.ball = false;
+    }
+
+    // If player is last player in room, delete room
+    if(player.rm && rooms[player.rm] && rooms[player.rm].players)
+    {delete rooms[player.rm];}
+
+    // Delete player
+    delete players[socket.id];
+  })
+});
+
+// SENDS DRAW FLAG TO ALL CLIENTS
+setInterval(function(){
+  //var objects = balls.concat(players);
+  io.sockets.emit('state',players);
+  //io.sockets.emit('message',rooms)
+},gameSpeed)
+
+                    //////////////////
+                    /// GAME LOGIC ///
+                    //////////////////
+
 // INIT LIST OF PLAYERS & BALLS
 var players = {};
 var balls = [];
-var numBalls = 5;
+
+spawnBalls(5);
 var gameSpeed = 1000/60;
 // SPAWN BALLS
-for(var i = 0; i < numBalls; i++){
+function spawnBalls(numBalls){
+  for(var i = 0; i < numBalls; i++){
   balls[i] = new Object();
   balls[i].type = 'ball';
   balls[i].x = cwidth/2;
@@ -39,11 +188,12 @@ for(var i = 0; i < numBalls; i++){
   balls[i].color = "#00000";
   balls[i].owner = undefined;
   players['ball'+i.toString()] = balls[i];
+  }
 }
 
 // STEP BALLS
-setInterval(function(){
-  for(var i = 0; i < numBalls; i++){
+var stepBalls = setInterval(function(){
+  for(var i = 0; i < balls.length; i++){
     var ball = balls[i];
     if(ball.owner === undefined){
       // CHECK FOR BALL BOUNCE ON X
@@ -92,7 +242,7 @@ setInterval(function(){
 }, gameSpeed);
 
 // STEP PLAYERS
-setInterval(function(){
+var stepPlayers = setInterval(function(){
   // ITERATES ALL PLAYERS
   for(var id in players){
     var player = players[id];
@@ -110,7 +260,7 @@ setInterval(function(){
     if(player.type === 'player' && player.ball === false){
       // IF ONE OF THE NUM OF BALLS TOUCHES PLAYER, PLAYER OWNS IT
       // ITERATES THROUGH BALLS
-      for(var i = 0; i < numBalls; i++){
+      for(var i = 0; i <  balls.length; i++){
         var ball = balls[i];
         if(ball.owner === undefined) {
           if(Math.abs(ball.x - player.x)<30 && Math.abs(ball.y - player.y)<30){
@@ -122,76 +272,3 @@ setInterval(function(){
     }
   }
 }, gameSpeed);
-
-io.on('connection',function(socket){
-  // WHEN NEW PLAYER JOINS
-  socket.on('new player',function(name){
-    // CREATE A NEW PLAYER WITH x AND y VARIABLES
-    playerid = socket.id;
-    players[playerid] = new Object();
-    players[playerid].name = name;
-    players[playerid].type = 'player';
-    players[playerid].x = 300;
-    players[playerid].y = 300;
-    players[playerid].color = "#"+((1<<24)*Math.random()|0).toString(16);
-    players[playerid].ball = false;
-    players[playerid].angle = 0;
-    players[playerid].charge = 1;
-    players[playerid].charging = false;
-    players[playerid].speed = 5;
-    players[playerid].speedmax = 5;
-  })
-  // WHEN PLAYER CLICKS
-  socket.on('mouse',function(click){
-    var player = players[socket.id] || {};
-    switch(click){
-      case 0:
-        player.charging = true;
-        player.ball = false;
-        player.charging = false;
-        break;
-      case 1:
-        if(player.ball === true){
-          player.charging = true;
-        }
-        break;
-      case 2:
-        player.ball = false;
-        player.charging = false;
-        break;
-    }
-  })
-  // WHEN PLAYER MOVES
-  socket.on('input', function(data) {
-    var player = players[socket.id] || {};
-    // MOVEMENT
-    var speed = player.speed;
-    if((data.up||data.down)&&(data.left||data.right))
-    {speed = Math.max(Math.sqrt(2*((1.5*speed)^2)),0.5)}
-
-    if(data.up    && player.y - speed > 0)            {player.y-=speed}
-    if(data.down  && player.y + speed < cheight)      {player.y+=speed}
-    if(data.left  && player.x - speed > 0)            {player.x-=speed}
-    if(data.right && player.x + speed < cwidth)       {player.x+=speed}
-
-    // DIRECTION FACING
-    var distx = data.mouseX - player.x;
-    var disty = data.mouseY - player.y;
-    //var disty = player.y - data.mouseY;
-    player.angle = Math.atan(disty/distx);
-    player.angleN = Math.sign(data.mouseX - player.x);
-  })
-  // WHEN PLAYER DISCONNECTS
-  socket.on('disconnect',function(){
-    var player = players[socket.id] || {};
-    player.charge = 0;
-    player.ball = false;
-    delete players[socket.id];
-  })
-});
-
-// SENDS DRAW FLAG TO ALL CLIENTS
-setInterval(function(){
-  //var objects = balls.concat(players);
-  io.sockets.emit('state',players);
-},gameSpeed)

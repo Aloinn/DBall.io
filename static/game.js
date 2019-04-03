@@ -166,9 +166,36 @@ function keyUpHandler(a){
   if(a.which===83){input.down = false;}
 }
 
+// REMOVE TEXT ON CLICK
 function clearfield(){
   document.getElementById("name-input").value = "";
 }
+
+// FUNCTION TO CREATE NEW ROOM
+function createRoom(){
+  var name = document.getElementById("name-input").value;
+  if(name ==="Enter your name here"){name = "Player"}
+  socket.emit('new connection',name);
+  socket.emit('create');
+}
+
+// RENDER ROOM WITH EACH NEW PLAYER
+socket.on('renderRoom', function(room){
+  var gui = document.getElementById("gui");
+  gui.style.display = "none";
+  var gui = document.getElementById("rooms");
+  gui.style.display = "flex";
+  for(var i = 0; i < room.red.length; i ++){
+    var id = "rp"+(i+1).toString();
+    document.getElementById(id).innerHTML = room.red[i];
+  }
+  for(var i = 0; i < room.blue.length; i ++){
+    var id = "bp"+(i+1).toString();
+    document.getElementById(id).innerHTML = room.blue[i];
+  }
+});
+
+/*
 // SENDS A CALL FOR THE 'new player' FLAG TO SERVER on STARTGAME
 function startGame(){
   var gui = document.getElementById("gui");
@@ -183,6 +210,7 @@ function startGame(){
     //console.log(input);
   }, 1000/60);
 }
+*/
 
 // DRAW THE CLIENT SCREEN BY DRAWING ALL PLAYER INSTANCES
 socket.on('state',function(objects){
