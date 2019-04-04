@@ -229,7 +229,7 @@ function joinRoom(){
 }
 // IF NO ROOMS WERE FOUND
 socket.on('no room',function(fail){
-  codeInput.value = "Room does not exist!";
+  codeInput.value = fail;
 })
 
 function backToMenu(){
@@ -238,6 +238,15 @@ function backToMenu(){
 }
 // RENDER ROOM WITH EACH NEW PLAYER
 socket.on('renderRoom', function(room){
+
+  for(var i = 0; i < 5; i ++){
+    var id = "rp"+(i+1).toString();
+    document.getElementById(id).innerHTML = '';
+  }
+  for(var i = 0; i < 5; i ++){
+    var id = "bp"+(i+1).toString();
+    document.getElementById(id).innerHTML = '';
+  }
 
   displaySection(lobbySection);
   codeValue.innerHTML = room.rmnm;

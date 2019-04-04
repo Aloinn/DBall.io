@@ -50,6 +50,34 @@ for(var rmnm in rooms){
 
   }
 }*/
+// CREATE TEAMS FUNCTION
+function makeTeams(room){
+  // CLEARS TEAMS
+  room.blue.length = 0;
+  room.red.length = 0;
+
+  for(var i = 0; i < room.players.length; i ++){
+    // ITERATES ALL PLAYER OBJECTS IN ROOM USING
+    // ID FROM ROOM'S PLAYER ARRAY
+    var player = players[room.players[i]];
+
+    // IF PLAYER HAS UNDECLARED TEAM
+    if(typeof player.team === 'undefined'){
+      // CHECKS WHICH TEAM IS BIGGER
+      if(room.blue.length <= room.red.length){
+        player.team = 'blue';
+      } else {
+        player.team = 'red';
+      }
+    }
+    // SORTS PLAYER TEAMS
+    if(player.team === 'blue'){// IF BLUE
+      room.blue.push(player.name)
+    } else {
+      room.red.push(player.name)
+    }
+  }
+}
 
 io.on('connection',function(socket){
   // PLAYER CREATES A ROOM
@@ -63,13 +91,15 @@ io.on('connection',function(socket){
     var player = players[socket.id]
     rooms[rmnm] = new Object();
     rooms[rmnm].rmnm = rmnm;
+    rooms[rmnm].state = states.waiting;
+
     rooms[rmnm].players = [];
     rooms[rmnm].players.push(socket.id);
-    rooms[rmnm].state = states.waiting;
+
     rooms[rmnm].blue = [];
     rooms[rmnm].red = [];
 
-    rooms[rmnm].blue.push(socket.id);
+    makeTeams(rooms[rmnm]);
 
     player.rm = rmnm;
     socket.join(rmnm);
@@ -79,15 +109,17 @@ io.on('connection',function(socket){
 
   // PLAYER JOINS ROOM
   socket.on('join',function(rmnm){
+    // CHECKS IF ROOM EXISTS
     if(rooms[rmnm] && rooms[rmnm].players.length !=10){
+      // IF SUCCESSFULLY JOINED ROOM
       var player = players[socket.id];
+
       player.rm = rmnm;
-
       rooms[rmnm].players.push(socket.id);
-      rooms[rmnm].blue.push(socket.id);
-
+      makeTeams(rooms[rmnm])
       socket.join(rmnm);
       io.sockets.in(rmnm).emit('renderRoom',rooms[rmnm]);
+
     } else {
       // IF CANNOT JOIN ROOM
       if(!rooms[rmnm])
@@ -167,8 +199,12 @@ io.on('connection',function(socket){
   socket.on('leave room',function(){
     var player = players[socket.id] || {};
 
-    if(player.rm && rooms[player.rm] && rooms[player.rm].players)
+    if(player.rm && rooms[player.rm] &&
+        rooms[player.rm].players && rooms[player.rm].players == 1)
     {delete rooms[player.rm];}
+    else if(player.rm && rooms[player.rm]){
+      disconnectLobby(player.rm, socket)
+    }
   });
   // WHEN PLAYER DISCONNECTS SUDDENLY
   socket.on('disconnect',function(){
@@ -180,16 +216,34 @@ io.on('connection',function(socket){
     }
 
     // If player is last player in room, delete room
-    if(player.rm && rooms[player.rm] && rooms[player.rm].players)
+    if(player.rm && rooms[player.rm] &&
+        rooms[player.rm].players && rooms[player.rm].players == 1)
     {delete rooms[player.rm];}
-    else if(player.rmn && rooms[player.rm]){
-      for(rooms)
+    // ELSE IF NOT LAST PERSON IN ROOM
+    else if(player.rm && rooms[player.rm]){
+      disconnectLobby(player.rm, socket)
     }
 
     // Delete player
     delete players[socket.id];
   })
 });
+
+// FUNCTION TO DISCONNECT PLAYER FROM ROOM
+function disconnectLobby(rmnm,socket){
+  // ITERATES THROUGH ALL PLAYERS IN ROOM
+  io.emit('message',rooms[rmnm]);
+  for(var i = 0; i < rooms[rmnm].players.length; i ++){
+
+    rooms[rmnm].players = rooms[rmnm].players.filter(player => player != socket.id)
+    io.emit('message',socket.id);
+    io.emit('message',rooms[rmnm]);
+  }
+  // RERENDERS FOR ALL PLAYERS
+  socket.leave(rmnm);
+  makeTeams(rooms[rmnm]);
+  io.sockets.in(rmnm).emit('renderRoom',rooms[rmnm]);
+}
 
 // SENDS DRAW FLAG TO ALL CLIENTS
 setInterval(function(){
