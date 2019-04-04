@@ -62,19 +62,40 @@ io.on('connection',function(socket){
       // ADD ROOM ID TO ROOM LIST
     var player = players[socket.id]
     rooms[rmnm] = new Object();
+    rooms[rmnm].rmnm = rmnm;
     rooms[rmnm].players = [];
     rooms[rmnm].players.push(socket.id);
     rooms[rmnm].state = states.waiting;
     rooms[rmnm].blue = [];
     rooms[rmnm].red = [];
 
-    rooms[rmnm].blue.push(player.name);
+    rooms[rmnm].blue.push(socket.id);
 
     player.rm = rmnm;
     socket.join(rmnm);
 
     io.sockets.in(rmnm).emit('renderRoom',rooms[rmnm]);
   });
+
+  // PLAYER JOINS ROOM
+  socket.on('join',function(rmnm){
+    if(rooms[rmnm] && rooms[rmnm].players.length !=10){
+      var player = players[socket.id];
+      player.rm = rmnm;
+
+      rooms[rmnm].players.push(socket.id);
+      rooms[rmnm].blue.push(socket.id);
+
+      socket.join(rmnm);
+      io.sockets.in(rmnm).emit('renderRoom',rooms[rmnm]);
+    } else {
+      // IF CANNOT JOIN ROOM
+      if(!rooms[rmnm])
+      {io.to(`${socket.id}`).emit('no room', "Room does not exist!");}
+      else
+      {io.to(`${socket.id}`).emit('no room', "Room is full!");}
+    }
+  })
 
   // NEW CONNECTION
   socket.on('new connection',function(name){
@@ -161,6 +182,9 @@ io.on('connection',function(socket){
     // If player is last player in room, delete room
     if(player.rm && rooms[player.rm] && rooms[player.rm].players)
     {delete rooms[player.rm];}
+    else if(player.rmn && rooms[player.rm]){
+      for(rooms)
+    }
 
     // Delete player
     delete players[socket.id];

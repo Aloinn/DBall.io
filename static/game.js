@@ -173,7 +173,7 @@ function keyUpHandler(a){
 // TEXT INPUTS TO GET VALUES FROM
 var nameBox = document.getElementById("name-input");
 var codeInput = document.getElementById("code-input");
-
+var codeValue = document.getElementById("code-num");
 // SECTIONS TO DISPLAY
 var mainSection = document.getElementById("main-section");
 var lobbySection = document.getElementById("lobby-section");
@@ -184,17 +184,31 @@ function displaySection(display){
   lobbySection.style.display = "none";
   joinSection.style.display = "none";
   display.style.display = "flex";
+  // RESET TEXT INSIDE INPUT
   if(display === mainSection)
-  {nameBox.value = "Enter your name here"}
+  {nameBox.value = "Enter your NAME here"}
+  if(display === joinSection)
+  {codeInput.value = "Enter your CODE here";}
 }
+
+// SETS NAME TO PLAYER IF NO INPUT OR EMPTY STRING
+function nameCheck(){
+  if (nameBox.value == null || nameBox.value.trim() === '' || nameBox.value ==="Enter your NAME here")
+  {nameBox.value = "Player"}
+}
+
 // REMOVE TEXT ON CLICK
 function clearfield(){
   nameBox.value = "";
 }
 
+function clearfieldCode(){
+  codeInput.value = "";
+}
+
 // FUNCTION TO CREATE NEW ROOM
 function createRoom(){
-  if(nameBox.value ==="Enter your NAME here"){nameBox.value = "Player"}
+  nameCheck();
   socket.emit('new connection',nameBox.value);
   socket.emit('create');
 }
@@ -204,9 +218,19 @@ function switchTeams(){
 
 }
 // FUNCTION TO JOIN TEAM
-function joinTeamInput(){
+function joinRoomInput(){
   displaySection(joinSection);
 }
+// FUNCTION WHEN THERS A ROOM CODE INPUT
+function joinRoom(){
+  nameCheck();
+  socket.emit('new connection',nameBox.value);
+  socket.emit('join', codeInput.value);
+}
+// IF NO ROOMS WERE FOUND
+socket.on('no room',function(fail){
+  codeInput.value = "Room does not exist!";
+})
 
 function backToMenu(){
   socket.emit('leave room');
@@ -216,6 +240,7 @@ function backToMenu(){
 socket.on('renderRoom', function(room){
 
   displaySection(lobbySection);
+  codeValue.innerHTML = room.rmnm;
 
   for(var i = 0; i < room.red.length; i ++){
     var id = "rp"+(i+1).toString();
