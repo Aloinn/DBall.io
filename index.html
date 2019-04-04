@@ -57,6 +57,7 @@
       }
 
       #main-section{
+        display:flex;
         position: absolute;
         width:300;
         height:135;
@@ -64,7 +65,9 @@
         top:50%;
       }
 
-      #name-input           { flex: 1;}
+      #name-input{
+        flex: 1;
+      }
 
       #play-button{
         flex: 1 100%;
@@ -75,7 +78,11 @@
         margin-right:2px;
         background-color: DodgerBlue;
       }
-      #join-room-button     { flex: 1; margin-left:2px;}
+
+      #join-room-button{
+        flex: 1;
+        margin-left:2px;
+      }
 
       .flex-item {
         background: tomato;
@@ -88,15 +95,21 @@
         letter-spacing: -1px;
         text-align: center;
       }
-      /* ROOMS */
-      #lobby{
-        display:none;
+
+      /* LOBBY */
+      #lobby-section{
+        display: none;
         position: absolute;
         width:500;
         height:340;
         left:calc(50% - 248px);
         top:30%;
       }
+
+      #lobby-section .flex-item{
+        width:235px;
+      }
+
       #bluteam{
         background-color: DodgerBlue !important;
         color:white;
@@ -105,13 +118,36 @@
         background-color: tomato !important;
         color:white;
       }
-      #rooms .flex-item{
-        background-color: #efefef;
-        width:235px;
-      }
 
       .flex-container .flex-item.player{
         color:black;
+        background-color: #efefef;
+      }
+
+      .flex-container .flex-item.button{
+        background-color: gray;
+      }
+
+      /* JOIN SECTION */
+      #join-section{
+        display:none;
+        position: absolute;
+        width:300;
+        height:140;
+        left:calc(50% - 148px);
+        top:40%;
+      }
+
+      #join-section .flex-item{
+        width:300px;
+      }
+
+      #join{
+        background-color: DodgerBlue;
+      }
+
+      #code-input{
+        flex:1;
       }
       /* BUTTON */
     </style>
@@ -123,12 +159,12 @@
     <div class="canvas-container">
       <canvas id="myCanvas"></canvas>
       <div class="flex-container" id="main-section">
-        <input class="flex-item" type="text" onclick="clearfield();" id="name-input" value="Enter your name here" maxlength="16" autofocus>
+        <input class="flex-item" type="text" onclick="clearfield();" id="name-input" value="Enter your NAME here" maxlength="10">
         <a href="#" class="flex-item" id="play-button" onClick="startGame()">Play solo</a>
         <a href="#" class="flex-item" id="create-room-button" onClick="createRoom()">Create room</a>
         <a href="#" class="flex-item" id="join-room-button" onClick="joinTeamInput()">Join room</a>
       </div>
-      <div class="flex-container" id="lobby" display="none">
+      <div class="flex-container" id="lobby-section" display="none">
         <a href="#"class="flex-item player" id="bluteam">BLUE</a>
         <a href="#"class="flex-item player" id="redteam">RED</a>
         <p class="flex-item player" id="bp1"></p>
@@ -141,12 +177,16 @@
         <p class="flex-item player" id="rp5"></p>
         <p class="flex-item player" id="bp5"></p>
         <p class="flex-item player" id="rp5"></p>
-        <a href="#" class="flex-item">Switch Teams</a>
-        <a href="#" class="flex-item">Leave team</a>
+        <a href="#" class="flex-item button">Switch Teams</a>
+        <a href="#" class="flex-item button" onClick="backToMenu()">Leave team</a>
       </div>
-      <div class="flex-container" id="join-section" display ="none">
+
+      <div class="flex-container" id="join-section" display="none">
         <input class="flex-item" type="text" onclick="clearfield();" id="code-input" value="Enter your CODE here" maxlength="4" autofocus>
+        <a href="#" class="flex-item button" id="join">Join</a>
+        <a href="#" class="flex-item button" onClick="backToMenu()">Cancel</a>
       </div>
+
     </div>
   </body>
   <script src="/static/game.js"></script>

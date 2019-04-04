@@ -165,11 +165,28 @@ function keyUpHandler(a){
   if(a.which===68){input.right = false;}
   if(a.which===83){input.down = false;}
 }
+
+                        ///////////////
+                        // MAIN MENU //
+                        ///////////////
+
+// TEXT INPUTS TO GET VALUES FROM
 var nameBox = document.getElementById("name-input");
 var codeInput = document.getElementById("code-input");
+
+// SECTIONS TO DISPLAY
 var mainSection = document.getElementById("main-section");
-var lobbySection = document.getElementById("lobby");
-var joinSection = document.getElementById("join-section")
+var lobbySection = document.getElementById("lobby-section");
+var joinSection = document.getElementById("join-section");
+
+function displaySection(display){
+  mainSection.style.display = "none";
+  lobbySection.style.display = "none";
+  joinSection.style.display = "none";
+  display.style.display = "flex";
+  if(display === mainSection)
+  {nameBox.value = "Enter your name here"}
+}
 // REMOVE TEXT ON CLICK
 function clearfield(){
   nameBox.value = "";
@@ -177,19 +194,29 @@ function clearfield(){
 
 // FUNCTION TO CREATE NEW ROOM
 function createRoom(){
-  if(nameBox ==="Enter your name here"){name = "Player"}
-  socket.emit('new connection',name);
+  if(nameBox.value ==="Enter your NAME here"){nameBox.value = "Player"}
+  socket.emit('new connection',nameBox.value);
   socket.emit('create');
 }
 
+// FUNCTION SWITCH TEAMS
+function switchTeams(){
+
+}
 // FUNCTION TO JOIN TEAM
 function joinTeamInput(){
-  joinSection.style.display = "flex";
+  displaySection(joinSection);
+}
+
+function backToMenu(){
+  socket.emit('leave room');
+  displaySection(mainSection);
 }
 // RENDER ROOM WITH EACH NEW PLAYER
 socket.on('renderRoom', function(room){
-  mainSection.style.display = "none";
-  lobbySection.style.display = "flex";
+
+  displaySection(lobbySection);
+
   for(var i = 0; i < room.red.length; i ++){
     var id = "rp"+(i+1).toString();
     document.getElementById(id).innerHTML = room.red[i];
@@ -204,7 +231,7 @@ socket.on('renderRoom', function(room){
 // SENDS A CALL FOR THE 'new player' FLAG TO SERVER on STARTGAME
 function startGame(){
   mainSection.style.display = "none";
-  if(nameBox ==="Enter your name here"){name = "Player"}
+  if(nameBox ==="Enter your NAME here"){name = "Player"}
   state = states.playing;
   socket.emit('new player', name);
   // SENDS A CALL FOR 'input' WHICH DATA CONCERNING input

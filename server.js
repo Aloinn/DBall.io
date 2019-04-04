@@ -142,6 +142,13 @@ io.on('connection',function(socket){
     player.angle = Math.atan(disty/distx);
     player.angleN = Math.sign(data.mouseX - player.x);
   })
+  // WHEN PLAYER LEAVES ROOM
+  socket.on('leave room',function(){
+    var player = players[socket.id] || {};
+
+    if(player.rm && rooms[player.rm] && rooms[player.rm].players)
+    {delete rooms[player.rm];}
+  });
   // WHEN PLAYER DISCONNECTS SUDDENLY
   socket.on('disconnect',function(){
     var player = players[socket.id] || {};
