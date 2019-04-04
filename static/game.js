@@ -21,6 +21,7 @@ function canvasetup(){
   ratioX = canvas.width/800;
   ratioY = canvas.height/600;
   ratio  = Math.min(ratioX,ratioY);
+  ratio = Math.min(ratio,1.2)
 }
 window.addEventListener('resize',canvasetup);
 canvasetup();
@@ -239,28 +240,44 @@ function backToMenu(){
 // RENDER ROOM WITH EACH NEW PLAYER
 socket.on('renderRoom', function(room){
 
+  // CLEAR ALL PLAYER ENTRIES
   for(var i = 0; i < 5; i ++){
     var id = "rp"+(i+1).toString();
     document.getElementById(id).innerHTML = '';
+    document.getElementById(id).style.backgroundImage = "none";
   }
   for(var i = 0; i < 5; i ++){
     var id = "bp"+(i+1).toString();
     document.getElementById(id).innerHTML = '';
+    document.getElementById(id).style.backgroundImage = "none";
   }
 
+  // REMOVE ALL GUIS EXCEPT LOBBY SECTION
   displaySection(lobbySection);
   codeValue.innerHTML = room.rmnm;
 
   for(var i = 0; i < room.red.length; i ++){
     var id = "rp"+(i+1).toString();
-    document.getElementById(id).innerHTML = room.red[i];
+    var textbox =   document.getElementById(id);
+    textbox.innerHTML = room.red[i].name;
+    room.red[i].ready ? textbox.style.backgroundImage = "url('/static/checkmark.png')" : textbox.style.backgroundImage = "none";
   }
   for(var i = 0; i < room.blue.length; i ++){
     var id = "bp"+(i+1).toString();
-    document.getElementById(id).innerHTML = room.blue[i];
+    var textbox =   document.getElementById(id);
+    textbox.innerHTML = room.blue[i].name;
+    room.blue[i].ready ? textbox.style.backgroundImage = "url('/static/checkmark.png')" : textbox.style.backgroundImage = "none";
   }
 });
 
+function playerReady(){
+  socket.emit('player ready');
+}
+
+// PLAYER SWITCH TEAMS
+function switchTeams(){
+  socket.emit('switch teams');
+}
 
 // SENDS A CALL FOR THE 'new player' FLAG TO SERVER on STARTGAME
 function startGame(){

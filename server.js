@@ -62,7 +62,7 @@ function makeTeams(room){
     var player = players[room.players[i]];
 
     // IF PLAYER HAS UNDECLARED TEAM
-    if(typeof player.team === 'undefined'){
+    if(player.team === "undeclared"){
       // CHECKS WHICH TEAM IS BIGGER
       if(room.blue.length <= room.red.length){
         player.team = 'blue';
@@ -72,14 +72,25 @@ function makeTeams(room){
     }
     // SORTS PLAYER TEAMS
     if(player.team === 'blue'){// IF BLUE
-      room.blue.push(player.name)
+      room.blue.push({name:player.name, ready:player.ready, })
     } else {
-      room.red.push(player.name)
+      room.red.push({name:player.name, ready:player.ready, })
     }
   }
 }
 
 io.on('connection',function(socket){
+
+  // NEW CONNECTION
+  socket.on('new connection',function(name){
+    playerid = socket.id;
+    players[playerid] = new Object();
+    players[playerid].name = name;
+    players[playerid].rm = 0;
+    players[playerid].ready = false;
+    players[playerid].team = "undeclared";
+  });
+
   // PLAYER CREATES A ROOM
   socket.on('create',function(){
     // MAKE NEW ROOM ID
@@ -129,13 +140,22 @@ io.on('connection',function(socket){
     }
   })
 
-  // NEW CONNECTION
-  socket.on('new connection',function(name){
-    playerid = socket.id;
-    players[playerid] = new Object();
-    players[playerid].name = name;
-    players[playerid].rm = 0;
+  // WHEN PLAYER IS READY IN LOBBY
+  socket.on('player ready',function(){
+    player = players[socket.id]
+    player.ready ? player.ready = false : player.ready = true;
+    makeTeams(rooms[player.rm]);
+    io.sockets.in(player.rm).emit('renderRoom',rooms[player.rm]);
   });
+
+  // WHEN PLAYER SWITCH TEAMS
+  socket.on('switch teams',function(){
+    player = players[socket.id]
+    player.team === 'red' ? player.team = 'blue' : player.team = 'red';
+    player.ready = false;
+    makeTeams(rooms[player.rm]);
+    io.sockets.in(player.rm).emit('renderRoom',rooms[player.rm]);
+  })
 
   // WHEN NEW PLAYER JOINS
   socket.on('new player',function(name){
