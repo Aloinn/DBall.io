@@ -165,26 +165,31 @@ function keyUpHandler(a){
   if(a.which===68){input.right = false;}
   if(a.which===83){input.down = false;}
 }
-
+var nameBox = document.getElementById("name-input");
+var codeInput = document.getElementById("code-input");
+var mainSection = document.getElementById("main-section");
+var lobbySection = document.getElementById("lobby");
+var joinSection = document.getElementById("join-section")
 // REMOVE TEXT ON CLICK
 function clearfield(){
-  document.getElementById("name-input").value = "";
+  nameBox.value = "";
 }
 
 // FUNCTION TO CREATE NEW ROOM
 function createRoom(){
-  var name = document.getElementById("name-input").value;
-  if(name ==="Enter your name here"){name = "Player"}
+  if(nameBox ==="Enter your name here"){name = "Player"}
   socket.emit('new connection',name);
   socket.emit('create');
 }
 
+// FUNCTION TO JOIN TEAM
+function joinTeamInput(){
+  joinSection.style.display = "flex";
+}
 // RENDER ROOM WITH EACH NEW PLAYER
 socket.on('renderRoom', function(room){
-  var gui = document.getElementById("gui");
-  gui.style.display = "none";
-  var gui = document.getElementById("rooms");
-  gui.style.display = "flex";
+  mainSection.style.display = "none";
+  lobbySection.style.display = "flex";
   for(var i = 0; i < room.red.length; i ++){
     var id = "rp"+(i+1).toString();
     document.getElementById(id).innerHTML = room.red[i];
@@ -198,10 +203,8 @@ socket.on('renderRoom', function(room){
 
 // SENDS A CALL FOR THE 'new player' FLAG TO SERVER on STARTGAME
 function startGame(){
-  var gui = document.getElementById("gui");
-  gui.style.display = "none";
-  var name = document.getElementById("name-input").value;
-  if(name ==="Enter your name here"){name = "Player"}
+  mainSection.style.display = "none";
+  if(nameBox ==="Enter your name here"){name = "Player"}
   state = states.playing;
   socket.emit('new player', name);
   // SENDS A CALL FOR 'input' WHICH DATA CONCERNING input
