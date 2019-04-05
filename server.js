@@ -105,15 +105,14 @@ function createPlayer(player){
   player.angle = 0;
   player.charge = 1;
   player.charging = false;
-  player.speed = 5;
-  player.speedmax = 5;
+  player.speed = 4.5;
+  player.speedmax = 4.5;
 }
 
 // START GAME
 function startGame(rmnm){
   var room = rooms[rmnm];
   room.state = states.playing;
-  console.log("Game started!");
   spawnBalls(rmnm, Math.max(1,Math.floor(room.players.length/2)));
 
   var blues = room.blue.length;
@@ -140,15 +139,11 @@ function startGame(rmnm){
   }
   // START ROOM
   io.sockets.in(rmnm).emit('start game',rooms[rmnm]);
-  room.stepPlayers = setInterval(() => {stepPlayers(room.players)},gameSpeed);
-  room.stepBalls = setInterval(() => {stepBalls(room.balls)},gameSpeed);
   room.stepEmit = stepEmit(rmnm,room.objects);
-  console.log('RUN');
+  room.stepRoom = setInterval(()=>{stepRoom(room);})
 }
 
 function endGame(room){
-  clearInterval(room.stepPlayers);
-  clearInterval(room.stepBalls);
   clearInterval(room.stepEmit);
   delete room;
 }
@@ -260,7 +255,6 @@ io.on('connection',function(socket){
     playerid = socket.id;
     players[playerid] = new Object();
     players[playerid].name = name;
-    players[playerid].type = 'player';
     players[playerid].x = 300;
     players[playerid].y = 300;
     players[playerid].color = "#"+((1<<24)*Math.random()|0).toString(16);
@@ -291,9 +285,9 @@ io.on('connection',function(socket){
   socket.on('input', function(data) {
     var player = players[socket.id] || {};
     // MOVEMENT
-    var speed = player.speed;
+    var speed = player.speed/Math.pow(player.charge,1.05);
     if((data.up||data.down)&&(data.left||data.right))
-    {speed = Math.max(Math.sqrt(2*((1.5*speed)^2)),0.5)}
+    {speed = 0.7*speed}
 
     if(data.up    && player.y - speed > 0)            {player.y-=speed}
     if(data.down  && player.y + speed < cheight)      {player.y+=speed}
@@ -340,9 +334,7 @@ io.on('connection',function(socket){
       }
     // ELSE IF NOT LAST PERSON IN ROOM
     else if(player.rm && rooms[player.rm]){
-      console.log("LAST BREATH!");
       disconnectLobby(player.rm, socket, true);
-      console.log("MADE IT!");
     }
 
     // Delete player
@@ -353,13 +345,11 @@ io.on('connection',function(socket){
 // FUNCTION TO DISCONNECT PLAYER FROM ROOM
 function disconnectLobby(rmnm,socket,dc){
   // ITERATES THROUGH ALL PLAYERS IN ROOM
-  console.log("removed from playerlist");
   for(var i = 0; i < rooms[rmnm].players.length; i ++){
     rooms[rmnm].players = rooms[rmnm].players.filter(player => player != socket.id)
   }
   // ITERATES THROUGH ALL OBJECTS IN ROOM
   delete rooms[rmnm].objects[socket.id]
-  console.log("removed from objectslist");
 
   // RERENDERS FOR ALL PLAYER
   if(rooms[rmnm].state == states.waiting){
@@ -372,7 +362,7 @@ function disconnectLobby(rmnm,socket,dc){
   //{socket.leave(rmnm);}
 }
 
-setInterval(function(){ console.log(rooms)},3000);
+//setInterval(function(){ console.log(rooms)},3000);
 
                     //////////////////
                     /// GAME LOGIC ///
@@ -387,87 +377,92 @@ function stepEmit(rmnm, objects){
 
 // INIT LIST OF PLAYERS & BALLS
 var players = {};
-
 var gameSpeed = 1000/60;
 
 // STEP BALLS
-function stepBalls(balls){
-  for(var i = 0; i < balls.length; i++){
-    var ball = balls[i];
-    if(ball.owner === undefined){
-      // CHECK FOR BALL BOUNCE ON X
-      if(ball.x + ball.dx < 0 || ball.x + ball.dx > cwidth){
-        ball.dx = -ball.dx;
-        ball.dy*= 0.5;
-        ball.dx *= 0.5;
-      } else {// OTHERWISE FOLLOW SPEED
-        ball.x += ball.dx;
-        ball.dx *= 0.99
-      }
+function stepBalls(ball){
+  // CHECKS IF BALL HAS OWNER
+  if(ball.owner === undefined){
+    // CHECK FOR BALL BOUNCE ON X
+    if(ball.x + ball.dx < 0 || ball.x + ball.dx > cwidth){
+      ball.dx = -ball.dx;
+      ball.dy *= 0.5;
+      ball.dx *= 0.5;
+    } else {// OTHERWISE FOLLOW SPEED
+      ball.x += ball.dx;
+      ball.dx *= 0.9985
+    }
 
-      // CHECK FOR BALL BOUNCE ON Y
-      if(ball.y + ball.dy < 0 || ball.y + ball.dy > cheight){
-        ball.dy = -ball.dy;
-        ball.dy*= 0.5;
-        ball.dx *=0.5;
-      } else { // OTHERWISE FOLLOW SPEED
-        ball.y += ball.dy;
-        ball.dy *= 0.99
-      }
+    // CHECK FOR BALL BOUNCE ON Y
+    if(ball.y + ball.dy < 0 || ball.y + ball.dy > cheight){
+      ball.dy = -ball.dy;
+      ball.dy *= 0.5;
+      ball.dx *= 0.5;
+    } else { // OTHERWISE FOLLOW SPEED
+      ball.y += ball.dy;
+      ball.dy *= 0.9985
+    }
 
-      // DAMPEN SPEED IF TOTAL SPEED IS LESS THAN 2
-      var spd = Math.sqrt(Math.pow(ball.dy,2)+Math.pow(ball.dx,2));
-      if(spd < 0.2){
-        ball.dy = 0;
-        ball.dx = 0;
-      }
-    } else {
-      var player = ball.owner;
-      // SET POSITION FOR THE BALL RELATIVE TO DIRECTION PLAYER FACSE
-      //ball.x = player.x+ player.angleN*(35*Math.cos(player.angle+(Math.PI/4)+((player.charge-1)*Math.PI/2)));
-      ball.x = player.x;
-      ball.y = player.y;
-      // IF PLAYER JUST THREW THIS BALL
-      if(player.ball === false){
-        ball.x = player.x+ player.angleN*(50*Math.cos(player.angle));
-        ball.y = player.y+ player.angleN*(50*Math.sin(player.angle));
-        ball.dx = 10*player.angleN*(player.charge)*player.charge*Math.cos(player.angle);
-        ball.dy = 10*player.angleN*(player.charge)*player.charge*Math.sin(player.angle);
-        ball.owner = undefined;
-        player.charge = 1;
-      }
+    // DAMPEN SPEED IF TOTAL SPEED IS LESS THAN 2
+    var spd = Math.sqrt(Math.pow(ball.dy,2)+Math.pow(ball.dx,2));
+    if(spd < 0.03){
+      ball.dy = 0;
+      ball.dx = 0;
+    }
+  // IF BALL DOESNT HAVE OWNER
+  } else {
+    var player = ball.owner;
+    // SET POSITION FOR THE BALL RELATIVE TO DIRECTION PLAYER FACSE
+    //ball.x = player.x+ player.angleN*(35*Math.cos(player.angle+(Math.PI/4)+((player.charge-1)*Math.PI/2)));
+    ball.x = player.x;
+    ball.y = player.y;
+    // IF PLAYER JUST THREW THIS BALL
+    if(player.ball === false){
+      ball.x = player.x+ player.angleN*(50*Math.cos(player.angle));
+      ball.y = player.y+ player.angleN*(50*Math.sin(player.angle));
+      ball.dx = player.angleN*Math.pow(player.charge,1.15)*Math.cos(player.angle);
+      ball.dy = player.angleN*Math.pow(player.charge,1.15)*Math.sin(player.angle);
+      ball.owner = undefined;
+      player.charge = 1;
     }
   }
 }
 
 // STEP PLAYERS
-function stepPlayers(players){
-  // ITERATES ALL PLAYERS
-  for(var id in players){
-    var player = players[id];
-    // CHARGE UP THROW
-    if(player.charging === true){
-      if(player.charge < 2){
-        player.charge+= 0.005;
-        player.speed = player.speedmax/(player.charge*player.charge);
+function stepRoom(room){
+  var objects = room.objects;
+  var balls = room.balls;
+  // ITERATES ALL OBJECTS
+  for(var id in objects){
+    // SETS THE OBJECT AS THE CORRESPONDING ITEM FROM ARRAY
+    var object = objects[id];
+    // IF ITERATED OBJECT IS IS A PLAYER
+    if(object.type === 'player'){
+      var player = object;
+      // CHARGE UP THROW
+      if(player.charging === true){
+        if(player.charge < 2){
+          player.charge+= 0.00065;
+        }
       }
-    } else {
-    // IF NOT CHARGING UP THROW
-    player.speed = player.speedmax;
-    }
-    // CHECK BALL PICKUP
-    if(player.type === 'player' && player.ball === false){
-      // IF ONE OF THE NUM OF BALLS TOUCHES PLAYER, PLAYER OWNS IT
-      // ITERATES THROUGH BALLS
-      for(var i = 0; i <  balls.length; i++){
-        var ball = balls[i];
-        if(ball.owner === undefined) {
-          if(Math.abs(ball.x - player.x)<30 && Math.abs(ball.y - player.y)<30){
-            ball.owner = player;
-            player.ball = true;
+      // CHECK BALL PICKUP
+      if(player.ball === false){
+        // IF ONE OF THE NUM OF BALLS TOUCHES PLAYER, PLAYER OWNS IT
+        // ITERATES THROUGH BALLS
+        for(var i = 0; i <  balls.length; i++){
+
+          var ball = balls[i];
+          // IF BALL HAS NO OWNER
+          if(ball.owner === undefined) {
+            if(Math.abs(ball.x - player.x)<30 && Math.abs(ball.y - player.y)<30){
+              ball.owner = player;
+              player.ball = true;
+            }
           }
         }
       }
+    } else {
+      stepBalls(object);
     }
   }
 }

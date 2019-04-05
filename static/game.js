@@ -287,7 +287,6 @@ socket.on('start game',function(){
   state = states.playing;
   setInterval(function() {
     socket.emit('input', input);
-    //console.log(input);*
   }, 1000/60);
 });
 
@@ -303,14 +302,12 @@ function startGame(){
   // SENDS A CALL FOR 'input' WHICH DATA CONCERNING input*/
   setInterval(function() {
     socket.emit('input', input);
-    //console.log(input);*
   }, 1000/60);
 }
 
 
 // DRAW THE CLIENT SCREEN BY DRAWING ALL PLAYER INSTANCES
 socket.on('state',function(objects){
-  console.log(objects);
   //CLEAR RECTANGLE
   ctx.clearRect(0,0,canvas.width,canvas.height);
   // DRAW HALF CUTTING LINE
