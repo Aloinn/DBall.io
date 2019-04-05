@@ -81,18 +81,20 @@ function makeTeams(room){
 }
 
 // SPAWN BALLS
-function spawnBalls(room,numBalls){
+function spawnBalls(rmnm,numBalls){
+  var room = rooms[rmnm];
   for(var i = 0; i < numBalls; i++){
-  room.balls[i] = new Object();
-  var ball = room.balls[i];
-  ball.type = 'ball';
-  ball.x = cwidth/2;
-  ball.dx = 0;
-  ball.y = cheight*(1+i)/(numBalls+1);
-  ball.dy = 0;
-  ball.color = "#00000";
-  ball.owner = undefined;
-  room.objects['ball'+i.toString()] = ball;
+
+    room.balls[i] = new Object();
+    var ball = room.balls[i];
+    ball.type = 'ball';
+    ball.x = cwidth/2;
+    ball.dx = 0;
+    ball.y = cheight*(1+i)/(numBalls+1);
+    ball.dy = 0;
+    ball.color = "#00000";
+    ball.owner = undefined;
+    room.objects['ball'+i.toString()] = ball;
   }
 }
 
@@ -112,7 +114,7 @@ function startGame(rmnm){
   var room = rooms[rmnm];
   room.state = states.playing;
   console.log("Game started!");
-  spawnBalls(room, Math.floor());
+  spawnBalls(rmnm, Math.max(1,Math.floor(room.players.length/2)));
 
   var blues = room.blue.length;
   var bb = 1;
@@ -127,7 +129,7 @@ function startGame(rmnm){
       player.x = cwidth*0.25;
       player.y = cheight*bb / (blues+1)
       bb += 1;
-      player.color = 'dodgersBlue';
+      player.color = 'dodgerBlue';
     } else {
       player.x = cwidth*0.75
       player.y = cheight*rr*1 / (reds+1)
@@ -138,8 +140,8 @@ function startGame(rmnm){
   }
   // START ROOM
   io.sockets.in(rmnm).emit('start game',rooms[rmnm]);
-  //room.stepPlayers = setInterval(() => {stepPlayers(room.players)},gameSpeed);
-  //room.stepBalls = setInterval(() => {stepBalls(room.balls)},gameSpeed);
+  room.stepPlayers = setInterval(() => {stepPlayers(room.players)},gameSpeed);
+  room.stepBalls = setInterval(() => {stepBalls(room.balls)},gameSpeed);
   room.stepEmit = stepEmit(rmnm,room.objects);
   console.log('RUN');
 }
@@ -314,11 +316,10 @@ io.on('connection',function(socket){
     if(player.rm && rooms[player.rm] && rooms[player.rm].players && rooms[player.rm].players.length == 1){
       endGame(rooms[player.rm]);
       delete rooms[player.rm];
-      console.log('removed!');
     }
 
     else if(player.rm && rooms[player.rm]){
-      disconnectLobby(player.rm, socket)
+      disconnectLobby(player.rm, socket, false)
     }
   });
   // WHEN PLAYER DISCONNECTS SUDDENLY
@@ -336,12 +337,12 @@ io.on('connection',function(socket){
     if(player.rm && rooms[player.rm] &&rooms[player.rm].players && rooms[player.rm].players.length == 1){
         endGame(rooms[player.rm]);
         delete rooms[player.rm];
-        console.log('removed!');
       }
-
     // ELSE IF NOT LAST PERSON IN ROOM
     else if(player.rm && rooms[player.rm]){
-      disconnectLobby(player.rm, socket)
+      console.log("LAST BREATH!");
+      disconnectLobby(player.rm, socket, true);
+      console.log("MADE IT!");
     }
 
     // Delete player
@@ -350,21 +351,25 @@ io.on('connection',function(socket){
 });
 
 // FUNCTION TO DISCONNECT PLAYER FROM ROOM
-function disconnectLobby(rmnm,socket){
+function disconnectLobby(rmnm,socket,dc){
   // ITERATES THROUGH ALL PLAYERS IN ROOM
-  io.emit('message',rooms[rmnm]);
+  console.log("removed from playerlist");
   for(var i = 0; i < rooms[rmnm].players.length; i ++){
-
     rooms[rmnm].players = rooms[rmnm].players.filter(player => player != socket.id)
-    io.emit('message',socket.id);
-    io.emit('message',rooms[rmnm]);
   }
-  // RERENDERS FOR ALL PLAYERS
-  socket.leave(rmnm);
-  if(rooms[rmnm].states === states.menu){
-  makeTeams(rooms[rmnm]);
-  io.sockets.in(rmnm).emit('renderRoom',rooms[rmnm]);
+  // ITERATES THROUGH ALL OBJECTS IN ROOM
+  delete rooms[rmnm].objects[socket.id]
+  console.log("removed from objectslist");
+
+  // RERENDERS FOR ALL PLAYER
+  if(rooms[rmnm].state == states.waiting){
+    makeTeams(rooms[rmnm]);
+    socket.to(rmnm).emit('renderRoom',rooms[rmnm]);
   }
+
+  //
+  //if(!dc)
+  //{socket.leave(rmnm);}
 }
 
 setInterval(function(){ console.log(rooms)},3000);
