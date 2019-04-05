@@ -184,7 +184,8 @@ function displaySection(display){
   mainSection.style.display = "none";
   lobbySection.style.display = "none";
   joinSection.style.display = "none";
-  display.style.display = "flex";
+  if(display)
+  {display.style.display = "flex";}
   // RESET TEXT INSIDE INPUT
   if(display === mainSection)
   {nameBox.value = "Enter your NAME here"}
@@ -270,6 +271,7 @@ socket.on('renderRoom', function(room){
   }
 });
 
+// WHEN PLAYER GETS READY
 function playerReady(){
   socket.emit('player ready');
 }
@@ -279,38 +281,49 @@ function switchTeams(){
   socket.emit('switch teams');
 }
 
+// START GAME CALL
+socket.on('start game',function(){
+  displaySection();
+  state = states.playing;
+  setInterval(function() {
+    socket.emit('input', input);
+    //console.log(input);*
+  }, 1000/60);
+});
+
 // SENDS A CALL FOR THE 'new player' FLAG TO SERVER on STARTGAME
 function startGame(){
+  displaySection("");
+  state = states.playing;
+  /*
   mainSection.style.display = "none";
   if(nameBox ==="Enter your NAME here"){name = "Player"}
   state = states.playing;
   socket.emit('new player', name);
-  // SENDS A CALL FOR 'input' WHICH DATA CONCERNING input
+  // SENDS A CALL FOR 'input' WHICH DATA CONCERNING input*/
   setInterval(function() {
     socket.emit('input', input);
-    //console.log(input);
+    //console.log(input);*
   }, 1000/60);
 }
 
 
 // DRAW THE CLIENT SCREEN BY DRAWING ALL PLAYER INSTANCES
 socket.on('state',function(objects){
-  if(state === states.playing)
-  {
-    //CLEAR RECTANGLE
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    // DRAW HALF CUTTING LINE
-    ctx.beginPath();
-    ctx.moveTo(canvas.width/2,0);
-    ctx.lineTo(canvas.width/2,canvas.height);
-    ctx.lineWidth = 3*ratio;
-    ctx.strokeStyle = "black";
-    ctx.stroke();
-    // DRAW EACH INDIVIDUAL OBJECT
-    for(var id in objects){
-      var object = objects[id];
-      render(object);
-    }
+  console.log(objects);
+  //CLEAR RECTANGLE
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // DRAW HALF CUTTING LINE
+  ctx.beginPath();
+  ctx.moveTo(canvas.width/2,0);
+  ctx.lineTo(canvas.width/2,canvas.height);
+  ctx.lineWidth = 3*ratio;
+  ctx.strokeStyle = "black";
+  ctx.stroke();
+  // DRAW EACH INDIVIDUAL OBJECT
+  for(var id in objects){
+    var object = objects[id];
+    render(object);
   }
 });
 
