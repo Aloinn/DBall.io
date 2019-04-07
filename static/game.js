@@ -140,7 +140,7 @@ function doMouseMove(event){
 }
 
 // WASD
-// input OBJECT
+// INPUT OBJECT
 var input = {
   up:false,
   down:false,

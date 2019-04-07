@@ -19,6 +19,9 @@ server.listen(5002, function() {
   console.log('Starting server on port 5002');
 });
 
+                  /////////////////////////
+                  /// SERVER SIDE LOGIC ///
+                  /////////////////////////
 // INIT VARIABLES
 var cwidth = 800;
 var cheight = 600;
@@ -30,9 +33,10 @@ var states = {
 }
 Object.freeze(states);
 
+// MAKES A LIST OF ROOM
 var rooms = {};
 
-// MAKES RANDOM ID
+// MAKES RANDOM ID ( returns 4 digit string )
 function makeid() {
   var text = "";
   var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -42,16 +46,9 @@ function makeid() {
   return text;
 }
 
-// ITERATES THROUGH ALL ROOMS
-/*
-for(var rmnm in rooms){
-  var room = rooms[rmnm];
-  if(room.state = states.waiting){
-
-  }
-}*/
-
-// CREATE TEAMS FUNCTION
+// SORT PLAYERS INTO TEAMS FUNCTION
+//( takes room object variable )
+//( assigns players into red or blue depending on team sizes)
 function makeTeams(room){
   // CLEARS TEAMS
   room.blue.length = 0;
@@ -81,8 +78,10 @@ function makeTeams(room){
 }
 
 // SPAWN BALLS
-function spawnBalls(rmnm,numBalls){
-  var room = rooms[rmnm];
+//( takes room object, and number of balls as params )
+//( creates ball objects inside the room )
+// BALL [ type, x, dx, y, dx, color, owner ]
+function spawnBalls(room,numBalls){
   for(var i = 0; i < numBalls; i++){
 
     room.balls[i] = new Object();
@@ -99,6 +98,9 @@ function spawnBalls(rmnm,numBalls){
 }
 
 // CREATE PLAYER
+//( takes player object )
+//( assigns default variables for player object )
+// PLAYER [ type, ball, angle, charge, charging, speed, speedmax ]
 function createPlayer(player){
   player.type = 'player';
   player.ball = false;
@@ -110,16 +112,20 @@ function createPlayer(player){
 }
 
 // START GAME
+//( takes room number as variable )
+//( sets the state of room to playing & spawn balls)
+//( spawns players left/right depending on player's teams )
+//( starts step process for room )
 function startGame(rmnm){
   var room = rooms[rmnm];
   room.state = states.playing;
-  spawnBalls(rmnm, Math.max(1,Math.floor(room.players.length/2)));
-
+  spawnBalls(rooms[rmnm], Math.max(1,Math.floor(room.players.length/2)));
+  // TEMP VARIABLES FOR CALCULATIONS
   var blues = room.blue.length;
   var bb = 1;
   var reds = room.red.length;
   var rr = 1;
-
+  // PUTS PLAYERS LEFT/RIGHT
   for(var i = 0; i < room.players.length; i ++){
     var player = players[room.players[i]];
     room.objects[room.players[i]] = player;
@@ -143,6 +149,9 @@ function startGame(rmnm){
   room.stepRoom = setInterval(()=>{stepRoom(room);})
 }
 
+// END GAME
+// ( takes room object as variable )
+// ( stop running step processes and deletes room object )
 function endGame(room){
   clearInterval(room.stepEmit);
   delete room;
@@ -281,6 +290,7 @@ io.on('connection',function(socket){
         break;
     }
   })
+
   // WHEN PLAYER MOVES
   socket.on('input', function(data) {
     var player = players[socket.id] || {};
@@ -291,8 +301,15 @@ io.on('connection',function(socket){
 
     if(data.up    && player.y - speed > 0)            {player.y-=speed}
     if(data.down  && player.y + speed < cheight)      {player.y+=speed}
-    if(data.left  && player.x - speed > 0)            {player.x-=speed}
-    if(data.right && player.x + speed < cwidth)       {player.x+=speed}
+    // IF PLAYER IS ON BLUE TEAM, CAN NOT CROSS CENTER
+    if(player.team === "blue"){
+      if(data.left  && player.x - speed > 0)            {player.x-=speed}
+      if(data.right && player.x + speed < cwidth/2)       {player.x+=speed}
+    } else {
+      // ELSE IF PLAYER IS ON RED TEAM CAN NOT CROSS CENTER
+      if(data.left  && player.x - speed > cwidth/2)            {player.x-=speed}
+      if(data.right && player.x + speed < cwidth)       {player.x+=speed}
+    }
 
     // DIRECTION FACING
     var distx = data.mouseX - player.x;
@@ -342,13 +359,13 @@ io.on('connection',function(socket){
   })
 });
 
-// FUNCTION TO DISCONNECT PLAYER FROM ROOM
+// DISCONNECT PLAYER FROM ROOM
 function disconnectLobby(rmnm,socket,dc){
-  // ITERATES THROUGH ALL PLAYERS IN ROOM
+  // ITERATES THROUGH ALL PLAYERS IN ROOM'S PLAYER ARRAY
   for(var i = 0; i < rooms[rmnm].players.length; i ++){
     rooms[rmnm].players = rooms[rmnm].players.filter(player => player != socket.id)
   }
-  // ITERATES THROUGH ALL OBJECTS IN ROOM
+  // ITERATES THROUGH ALL OBJECTS IN ROOM'S OBJECT ARRAY
   delete rooms[rmnm].objects[socket.id]
 
   // RERENDERS FOR ALL PLAYER
@@ -356,30 +373,21 @@ function disconnectLobby(rmnm,socket,dc){
     makeTeams(rooms[rmnm]);
     socket.to(rmnm).emit('renderRoom',rooms[rmnm]);
   }
-
-  //
-  //if(!dc)
-  //{socket.leave(rmnm);}
 }
-
-//setInterval(function(){ console.log(rooms)},3000);
 
                     //////////////////
                     /// GAME LOGIC ///
                     //////////////////
-
-// SENDS DRAW FLAG TO ALL CLIENTS
-function stepEmit(rmnm, objects){
-  return setInterval(function(){
-    io.sockets.in(rmnm).emit('state',objects);
-  }, gameSpeed);
-}
 
 // INIT LIST OF PLAYERS & BALLS
 var players = {};
 var gameSpeed = 1000/60;
 
 // STEP BALLS
+//( takes the list of balls from the room )
+//( dampens ball speed each step )
+//( checks for ball to player collisions & ball to wall )
+//( player throwball physics )
 function stepBalls(ball){
   // CHECKS IF BALL HAS OWNER
   if(ball.owner === undefined){
@@ -429,6 +437,10 @@ function stepBalls(ball){
 }
 
 // STEP PLAYERS
+//( takes the room object as variable )
+//( sets whether player is charging or not )
+//( if player is charging, wind up charge )
+//()
 function stepRoom(room){
   var objects = room.objects;
   var balls = room.balls;
@@ -465,4 +477,13 @@ function stepRoom(room){
       stepBalls(object);
     }
   }
+}
+
+// SENDS DRAW FLAG TO ALL CLIENTS
+//( takes room number and list of objects in room as variables )
+//( sends all client in room a list of objetcs to render )
+function stepEmit(rmnm, objects){
+  return setInterval(function(){
+    io.sockets.in(rmnm).emit('state',objects);
+  }, gameSpeed);
 }
