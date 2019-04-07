@@ -122,7 +122,7 @@ function startGame(rmnm){
 
   var room = rooms[rmnm];
   room.state = states.playing;
-  spawnBalls(rooms[rmnm], Math.max(1,Math.floor(room.players.length/2)));
+  spawnBalls(rooms[rmnm], Math.max(1,Math.ceil(room.players.length/2)+1));
 
   // TEMP VARIABLES FOR CALCULATIONS
   var blues = room.blue.length;
@@ -155,7 +155,7 @@ function startGame(rmnm){
   room.stepRoom = setInterval(()=>{stepRoom(room);})
 }
 
-// 
+//
 function endGame(rmnm){
 
 }
@@ -285,19 +285,16 @@ io.on('connection',function(socket){
   socket.on('mouse',function(click){
     var player = players[socket.id] || {};
     switch(click){
-      case 0:
-        player.charging = true;
-        player.ball = false;
-        player.charging = false;
-        break;
-      case 1:
+      case 1: // MOUSE DOWN
         if(player.ball === true){
           player.charging = true;
         }
         break;
-      case 2:
-        player.ball = false;
-        player.charging = false;
+      case 2: // MOUSE UP
+        if(player.ball === true && player.charging === true){
+          player.ball = false;
+          player.charging = false;
+        }
         break;
     }
   })
@@ -456,13 +453,21 @@ function stepBalls(ball){
     ball.y = player.y;
     // IF PLAYER JUST THREW THIS BALL
     if(player.ball === false){
-      ball.x = player.x+ player.angleN*(50*Math.cos(player.angle));
-      ball.y = player.y+ player.angleN*(50*Math.sin(player.angle));
-      ball.dx = player.angleN*Math.pow(player.charge,1.15)*Math.cos(player.angle);
-      ball.dy = player.angleN*Math.pow(player.charge,1.15)*Math.sin(player.angle);
-      ball.owner = undefined;
-      ball.active = true;
-      player.charge = 1;
+      if( // IF THE BALL DOESNT SPAWN OUTSIDE THE CANVAS
+          (player.x + player.angleN*50*Math.cos(player.angle) < cwidth) &&
+          (player.x + player.angleN*50*Math.cos(player.angle) > 0) &&
+          (player.y + player.angleN*50*Math.sin(player.angle) < cheight) &&
+          (player.y + player.angleN*50*Math.sin(player.angle) > 0)
+        ) {
+          // THEN SHOOT THE BALL
+        ball.x = player.x+ player.angleN*(50*Math.cos(player.angle));
+        ball.y = player.y+ player.angleN*(50*Math.sin(player.angle));
+        ball.dx = player.angleN*Math.pow(player.charge,1.15)*Math.cos(player.angle);
+        ball.dy = player.angleN*Math.pow(player.charge,1.15)*Math.sin(player.angle);
+        ball.owner = undefined;
+        ball.active = true;
+        player.charge = 1;
+      }
     }
   }
 }
