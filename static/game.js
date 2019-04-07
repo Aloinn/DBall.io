@@ -101,6 +101,17 @@ function drawball(object){
   ctx.stroke();
 }
 
+function drawTime(time){
+  var displayTime = time;
+  if(time === 0)
+  {displayTime = "GO!"}
+
+  ctx.font = "bold 300px Arial";
+  ctx.fillStyle = "#efefef";
+  ctx.fillText(displayTime,canvas.width/2,canvas.height*3/5)
+  ctx.strokeText(displayTime,canvas.width/2, canvas.height*3/5);
+}
+
 // RENDER FUNCTION TO READ OMMITTED DATA
 function render(object){
   // IF OBJECT IS A PLAYER, DRAW THIS WAY
@@ -114,6 +125,8 @@ function render(object){
 
   } else if(object.type === 'ball'){
     drawball(object);
+  } else if(object.type === 'timer'){
+    drawTime(object.time);
   }
 }
 
@@ -123,7 +136,6 @@ function render(object){
 canvas.addEventListener("mousedown",  doMouseDown,  false);
 canvas.addEventListener("mouseup",    doMouseUp,    false)
 canvas.addEventListener("mousemove",  doMouseMove,  false);
-canvas.addEventListener("click",      doMouseClick, false)
 
 function doMouseDown(event){
   socket.emit('mouse', 1);
@@ -133,9 +145,6 @@ function doMouseUp(event){
   socket.emit('mouse', 2);
 }
 
-function doMouseClick(event){
-  socket.emit('mouse', 0);
-}
 // GET MOUSE COORDINATES
 function doMouseMove(event){
   var rect = canvas.getBoundingClientRect();
@@ -294,11 +303,7 @@ socket.on('start game',function(){
 function startGame(){
   displaySection("");
   state = states.playing;
-  /*
-  mainSection.style.display = "none";
-  if(nameBox ==="Enter your NAME here"){name = "Player"}
-  state = states.playing;
-  socket.emit('new player', name);
+
   // SENDS A CALL FOR 'input' WHICH DATA CONCERNING input*/
   setInterval(function() {
     socket.emit('input', input);

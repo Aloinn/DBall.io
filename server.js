@@ -95,6 +95,7 @@ function spawnBalls(room,numBalls){
     ball.color = "#efefef";
     ball.team = undefined;
     ball.owner = undefined;
+    ball.prevowner = undefined;
     room.objects['ball'+i.toString()] = ball;
   }
 }
@@ -121,7 +122,7 @@ function createPlayer(player){
 function startGame(rmnm){
 
   var room = rooms[rmnm];
-  room.state = states.playing;
+  room.state = states.starting;
   spawnBalls(rooms[rmnm], Math.max(1,Math.ceil(room.players.length/2)+1));
 
   // TEMP VARIABLES FOR CALCULATIONS
@@ -148,11 +149,36 @@ function startGame(rmnm){
     }
     createPlayer(player);
   }
+  // ADDS TIMER
+  room.objects['timer'] = new Object();
+  room.objects['timer'].type = 'timer';
 
   // START ROOM
   io.sockets.in(rmnm).emit('start game',rooms[rmnm]);
   room.stepEmit = stepEmit(rmnm,room.objects);
-  room.stepRoom = setInterval(()=>{stepRoom(room);})
+  delayStart(room);
+}
+
+//
+function delayStart(room){
+  // SECONDS TO COUNT DOWN
+  var time = 4
+  room.objects['timer'].time = time+1;
+
+  var timer = setInterval(function(){
+    // IF TIME IS 0
+    room.objects['timer'].time = time;
+    if(time === -1){
+      // CLEAR TIMER AND START STEP PROCESS
+      clearInterval(timer);
+      delete room.objects['timer'];
+      room.state = states.playing;
+      room.stepRoom = setInterval(()=>{stepRoom(room);}); // FIX THIS LATER
+    } else {
+      // SUBTRACT 1 SECOND FROM COUNTER
+      time -=1;
+    }
+  },1000);
 }
 
 //
@@ -302,23 +328,26 @@ io.on('connection',function(socket){
   // WHEN PLAYER MOVES
   socket.on('input', function(data) {
     var player = players[socket.id] || {};
-    // MOVEMENT
-    var speed = player.speed/Math.pow(player.charge,1.05);
-    if((data.up||data.down)&&(data.left||data.right))
-    {speed = 0.7*speed}
 
-    if(data.up    && player.y - speed > 0)            {player.y-=speed}
-    if(data.down  && player.y + speed < cheight)      {player.y+=speed}
-    // IF PLAYER IS ON BLUE TEAM, CAN NOT CROSS CENTER
-    if(player.team === "blue"){
-      if(data.left  && player.x - speed > 0)            {player.x-=speed}
-      if(data.right && player.x + speed < cwidth/2)       {player.x+=speed}
-    } else {
-      // ELSE IF PLAYER IS ON RED TEAM CAN NOT CROSS CENTER
-      if(data.left  && player.x - speed > cwidth/2)            {player.x-=speed}
-      if(data.right && player.x + speed < cwidth)       {player.x+=speed}
+    // CHECK IF ROOM IS STARTING OR PLAYING
+    if(player.rm && rooms[player.rm] && rooms[player.rm].state === states.playing){
+      // MOVEMENT
+      var speed = player.speed/Math.pow(player.charge,1.05);
+      if((data.up||data.down)&&(data.left||data.right))
+      {speed = 0.7*speed}
+
+      if(data.up    && player.y - speed > 0)            {player.y-=speed}
+      if(data.down  && player.y + speed < cheight)      {player.y+=speed}
+      // IF PLAYER IS ON BLUE TEAM, CAN NOT CROSS CENTER
+      if(player.team === "blue"){
+        if(data.left  && player.x - speed > 0)            {player.x-=speed}
+        if(data.right && player.x + speed < cwidth/2)       {player.x+=speed}
+      } else {
+        // ELSE IF PLAYER IS ON RED TEAM CAN NOT CROSS CENTER
+        if(data.left  && player.x - speed > cwidth/2)            {player.x-=speed}
+        if(data.right && player.x + speed < cwidth)       {player.x+=speed}
+      }
     }
-
     // DIRECTION FACING
     var distx = data.mouseX - player.x;
     var disty = data.mouseY - player.y;
@@ -391,25 +420,32 @@ function disconnectLobby(rmnm,socket,dc){
 var players = {};
 var gameSpeed = 1000/60;
 
+function deactivateBall(ball){
+  ball.color = "#efefef";
+  ball.prevowner = undefined;
+  ball.team = undefined;
+  ball.owner = undefined;
+  ball.active = false;
+}
+
+function activateBall(ball, owner){
+  ball.color = "#efefef";
+  ball.prevowner = owner;
+  ball.team = ball.owner.team;
+  ball.owner = undefined;
+}
 // STEP BALLS
 //( takes the list of balls from the room )
 //( dampens ball speed each step )
 //( checks for ball to player collisions & ball to wall )
 //( player throwball physics )
 function stepBalls(ball){
-  // IF BALL IS ACTIVE / UNACTIVE
-  if(ball.active){
-    ball.color = "gray";
-  } else {
-    ball.color = "#efefef";
-  }
 
   // CHECKS IF BALL HAS OWNER
   if(ball.owner === undefined){
     // CHECK FOR BALL BOUNCE ON X
     if(ball.x + ball.dx < 0 || ball.x + ball.dx > cwidth){
-      ball.active = false;
-      ball.color = "#efefef";
+      deactivateBall(ball);
       ball.dx = -ball.dx;
       ball.dy *= 0.5;
       ball.dx *= 0.5;
@@ -420,8 +456,7 @@ function stepBalls(ball){
 
     // CHECK FOR BALL BOUNCE ON Y
     if(ball.y + ball.dy < 0 || ball.y + ball.dy > cheight){
-      ball.active = false;
-      ball.color = "#efefef";
+      deactivateBall(ball);
       ball.dy = -ball.dy;
       ball.dy *= 0.5;
       ball.dx *= 0.5;
@@ -439,10 +474,8 @@ function stepBalls(ball){
       ball.dx = 0;
     }
     // IF SPEED IS LESS THAN 0.1
-    if(spd < 0.1){
-      ball.color = '#efefef';
-      ball.active = false;
-    }
+    if(spd < 0.1)
+    {deactivateBall(ball)}
   // IF BALL DOESNT HAVE OWNER
   } else {
     ball.color = 'gray';
@@ -459,13 +492,22 @@ function stepBalls(ball){
           (player.y + player.angleN*50*Math.sin(player.angle) < cheight) &&
           (player.y + player.angleN*50*Math.sin(player.angle) > 0)
         ) {
-          // THEN SHOOT THE BALL
+          // THEN SHOOT THE BALL =>
+
+          // SETS POSITION
         ball.x = player.x+ player.angleN*(50*Math.cos(player.angle));
         ball.y = player.y+ player.angleN*(50*Math.sin(player.angle));
+          // SET SPEED
         ball.dx = player.angleN*Math.pow(player.charge,1.15)*Math.cos(player.angle);
         ball.dy = player.angleN*Math.pow(player.charge,1.15)*Math.sin(player.angle);
+          // SET BALL'S TEAM
+        ball.team = ball.owner.team
+          // SET PREV OWNER
+        ball.prevowner = ball.owner;
         ball.owner = undefined;
+          // SET BALL ACTIVE
         ball.active = true;
+          // CLEAR PLAYER'S CHARGE BAR
         player.charge = 1;
       }
     }
@@ -506,10 +548,13 @@ function stepRoom(room){
               ball.owner = player;
               player.ball = true;
             }
+            console.table(ball);
+            console.table(player);
             // IF BALL IS ACTIVE AND NOT ON PLAYER'S TEAM
-            if(ball.active === true && balls.team === player.team){
+            if(ball.active === true && balls.team != player.team){
               // IF BALL HIS PLAYER && BALL IS NOT THROWN BY PLAYERS TEAM MEMBER
-
+              console.log('oof!');
+              delete objects[id]
             }
           }
         }
