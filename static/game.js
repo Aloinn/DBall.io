@@ -63,12 +63,14 @@ function drawbody(object){
       ctx.strokeStyle = 'black';
       ctx.stroke();
 }
+
 // DRAW NAME
 function drawname(object){
   ctx.font = "16px Arial";
   ctx.textAlign = "center";
   ctx.fillText(object.name, (object.x*ratioX), (object.y*ratioY)+ (60*ratio));
 }
+
 // DRAW CHARGE
 function drawcharge(object){
   ctx.beginPath();
@@ -79,6 +81,7 @@ function drawcharge(object){
   ctx.strokeStyle = 'black';
   ctx.stroke();
 }
+
 // DRAW BALL
 function drawball(object){
   ctx.beginPath();
@@ -91,12 +94,13 @@ function drawball(object){
   } else {
     ctx.arc((object.x*ratioX), (object.y*ratioY), 10*ratio, 0, 2*Math.PI, false);
   }
-  ctx.fillStyle = "#efefef";
+  ctx.fillStyle = object.color;
   ctx.fill();
   ctx.lineWidth = 3*ratio;
   ctx.strokeStyle = 'black';
   ctx.stroke();
 }
+
 // RENDER FUNCTION TO READ OMMITTED DATA
 function render(object){
   // IF OBJECT IS A PLAYER, DRAW THIS WAY
@@ -215,10 +219,6 @@ function createRoom(){
   socket.emit('create');
 }
 
-// FUNCTION SWITCH TEAMS
-function switchTeams(){
-
-}
 // FUNCTION TO JOIN TEAM
 function joinRoomInput(){
   displaySection(joinSection);

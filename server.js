@@ -91,7 +91,9 @@ function spawnBalls(room,numBalls){
     ball.dx = 0;
     ball.y = cheight*(1+i)/(numBalls+1);
     ball.dy = 0;
-    ball.color = "#00000";
+    ball.active = false;
+    ball.color = "#efefef";
+    ball.team = undefined;
     ball.owner = undefined;
     room.objects['ball'+i.toString()] = ball;
   }
@@ -117,14 +119,17 @@ function createPlayer(player){
 //( spawns players left/right depending on player's teams )
 //( starts step process for room )
 function startGame(rmnm){
+
   var room = rooms[rmnm];
   room.state = states.playing;
   spawnBalls(rooms[rmnm], Math.max(1,Math.floor(room.players.length/2)));
+
   // TEMP VARIABLES FOR CALCULATIONS
   var blues = room.blue.length;
   var bb = 1;
   var reds = room.red.length;
   var rr = 1;
+
   // PUTS PLAYERS LEFT/RIGHT
   for(var i = 0; i < room.players.length; i ++){
     var player = players[room.players[i]];
@@ -143,10 +148,16 @@ function startGame(rmnm){
     }
     createPlayer(player);
   }
+
   // START ROOM
   io.sockets.in(rmnm).emit('start game',rooms[rmnm]);
   room.stepEmit = stepEmit(rmnm,room.objects);
   room.stepRoom = setInterval(()=>{stepRoom(room);})
+}
+
+// 
+function endGame(rmnm){
+
 }
 
 // END GAME
@@ -333,8 +344,8 @@ io.on('connection',function(socket){
       disconnectLobby(player.rm, socket, false)
     }
   });
-  // WHEN PLAYER DISCONNECTS SUDDENLY
 
+  // WHEN PLAYER DISCONNECTS SUDDENLY
   socket.on('disconnect',function(){
     var player = players[socket.id] || {};
 
@@ -389,10 +400,19 @@ var gameSpeed = 1000/60;
 //( checks for ball to player collisions & ball to wall )
 //( player throwball physics )
 function stepBalls(ball){
+  // IF BALL IS ACTIVE / UNACTIVE
+  if(ball.active){
+    ball.color = "gray";
+  } else {
+    ball.color = "#efefef";
+  }
+
   // CHECKS IF BALL HAS OWNER
   if(ball.owner === undefined){
     // CHECK FOR BALL BOUNCE ON X
     if(ball.x + ball.dx < 0 || ball.x + ball.dx > cwidth){
+      ball.active = false;
+      ball.color = "#efefef";
       ball.dx = -ball.dx;
       ball.dy *= 0.5;
       ball.dx *= 0.5;
@@ -403,6 +423,8 @@ function stepBalls(ball){
 
     // CHECK FOR BALL BOUNCE ON Y
     if(ball.y + ball.dy < 0 || ball.y + ball.dy > cheight){
+      ball.active = false;
+      ball.color = "#efefef";
       ball.dy = -ball.dy;
       ball.dy *= 0.5;
       ball.dx *= 0.5;
@@ -413,12 +435,20 @@ function stepBalls(ball){
 
     // DAMPEN SPEED IF TOTAL SPEED IS LESS THAN 2
     var spd = Math.sqrt(Math.pow(ball.dy,2)+Math.pow(ball.dx,2));
+
+    // IF SPEED IS LESS THAN 0.3
     if(spd < 0.03){
       ball.dy = 0;
       ball.dx = 0;
     }
+    // IF SPEED IS LESS THAN 0.1
+    if(spd < 0.1){
+      ball.color = '#efefef';
+      ball.active = false;
+    }
   // IF BALL DOESNT HAVE OWNER
   } else {
+    ball.color = 'gray';
     var player = ball.owner;
     // SET POSITION FOR THE BALL RELATIVE TO DIRECTION PLAYER FACSE
     //ball.x = player.x+ player.angleN*(35*Math.cos(player.angle+(Math.PI/4)+((player.charge-1)*Math.PI/2)));
@@ -431,6 +461,7 @@ function stepBalls(ball){
       ball.dx = player.angleN*Math.pow(player.charge,1.15)*Math.cos(player.angle);
       ball.dy = player.angleN*Math.pow(player.charge,1.15)*Math.sin(player.angle);
       ball.owner = undefined;
+      ball.active = true;
       player.charge = 1;
     }
   }
@@ -440,7 +471,6 @@ function stepBalls(ball){
 //( takes the room object as variable )
 //( sets whether player is charging or not )
 //( if player is charging, wind up charge )
-//()
 function stepRoom(room){
   var objects = room.objects;
   var balls = room.balls;
@@ -462,13 +492,19 @@ function stepRoom(room){
         // IF ONE OF THE NUM OF BALLS TOUCHES PLAYER, PLAYER OWNS IT
         // ITERATES THROUGH BALLS
         for(var i = 0; i <  balls.length; i++){
-
           var ball = balls[i];
-          // IF BALL HAS NO OWNER
-          if(ball.owner === undefined) {
-            if(Math.abs(ball.x - player.x)<30 && Math.abs(ball.y - player.y)<30){
+          // IF BALL COLLIDES WITH PLAYER
+          if(Math.abs(ball.x - player.x)<30 && Math.abs(ball.y - player.y)<30 && ball.owner === undefined){
+            // IF BALL IS NOT ACTIVE, LET PLAYER PICK UP
+            if(ball.active === false) {
+              //ball.color = 'gray';
               ball.owner = player;
               player.ball = true;
+            }
+            // IF BALL IS ACTIVE AND NOT ON PLAYER'S TEAM
+            if(ball.active === true && balls.team === player.team){
+              // IF BALL HIS PLAYER && BALL IS NOT THROWN BY PLAYERS TEAM MEMBER
+
             }
           }
         }
