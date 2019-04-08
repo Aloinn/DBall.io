@@ -155,6 +155,7 @@ function doMouseMove(event){
 // WASD
 // INPUT OBJECT
 var input = {
+  shift:false,
   up:false,
   down:false,
   right:false,
@@ -172,14 +173,19 @@ function keyDownHandler(a){
   if(a.which===87){input.up = true;}
   if(a.which===68){input.right = true;}
   if(a.which===83){input.down = true;}
+  if(a.shiftKey)  {input.shift = true;}
 }
 function keyUpHandler(a){
   if(a.which===65){input.left = false;}
   if(a.which===87){input.up = false;}
   if(a.which===68){input.right = false;}
   if(a.which===83){input.down = false;}
+  if(a.which===16){input.shift = false;}
 }
 
+function toggleLeaderboard(){
+
+}
                         ///////////////
                         // MAIN MENU //
                         ///////////////
@@ -192,7 +198,8 @@ var codeValue = document.getElementById("code-num");
 var mainSection = document.getElementById("main-section");
 var lobbySection = document.getElementById("lobby-section");
 var joinSection = document.getElementById("join-section");
-
+// LEADERBOARD
+var leaderboard = document.getElementById("leaderboard-section");
 function displaySection(display){
   mainSection.style.display = "none";
   lobbySection.style.display = "none";
@@ -290,6 +297,48 @@ function switchTeams(){
   socket.emit('switch teams');
 }
 
+// DRAW LEADERBOARD
+function drawLeaderboard(red,blue){
+  console.log('red');
+  console.table(red);
+  console.log('blue');
+  console.table(blue);
+  leaderboard.style.display = 'flex';
+
+  for(var i = 0; i < 5; i ++){
+    var name =   document.getElementById(   "lbp"+(i+1).toString());
+    var kills =   document.getElementById(  "bp"+(i+1).toString()+"k");
+    var deaths =   document.getElementById( "bp"+(i+1).toString()+"d");
+    if(blue[i]){
+      name.innerHTML = blue[i].name;
+      kills.innerHTML = blue[i].kills.toString();
+      deaths.innerHTML = blue[i].deaths.toString();
+    } else {
+      name.innerHTML = ''
+      kills.innerHTML = ''
+      deaths.innerHTML = ''
+    }
+  }
+
+  for(var i = 0; i < 5; i ++){
+    var name =   document.getElementById(   "lrp"+(i+1).toString());
+    var kills =   document.getElementById(  "rp"+(i+1).toString()+"k");
+    var deaths =   document.getElementById( "rp"+(i+1).toString()+"d");
+    if(red[i]){
+      name.innerHTML = red[i].name;
+      kills.innerHTML = red[i].kills.toString();
+      deaths.innerHTML = red[i].deaths.toString();
+    } else {
+      name.innerHTML = ''
+      kills.innerHTML = ''
+      deaths.innerHTML = ''
+    }
+  }
+}
+
+function clearLeaderboard(){
+  leaderboard.style.display = 'none';
+}
 // START GAME CALL
 socket.on('start game',function(){
   displaySection();
@@ -299,20 +348,13 @@ socket.on('start game',function(){
   }, 1000/60);
 });
 
-// SENDS A CALL FOR THE 'new player' FLAG TO SERVER on STARTGAME
-function startGame(){
-  displaySection("");
-  state = states.playing;
-
-  // SENDS A CALL FOR 'input' WHICH DATA CONCERNING input*/
-  setInterval(function() {
-    socket.emit('input', input);
-  }, 1000/60);
-}
-
-
 // DRAW THE CLIENT SCREEN BY DRAWING ALL PLAYER INSTANCES
-socket.on('state',function(objects){
+socket.on('state',function(objects,red,blue){
+  // IF SHIFT/TAB IS PRESSED
+  if(input.shift === true)
+  {drawLeaderboard(red,blue);}
+  else
+  {clearLeaderboard(red,blue);}
   //CLEAR RECTANGLE
   ctx.clearRect(0,0,canvas.width,canvas.height);
   // DRAW HALF CUTTING LINE
@@ -329,6 +371,11 @@ socket.on('state',function(objects){
   }
 });
 
+var numplayers = document.getElementById("numplayersamount")
+
+socket.on('global players',function(num){
+  numplayers.innerHTML = num;
+})
 //DEBUG
 socket.on('message', function(data) {
   console.log(data);

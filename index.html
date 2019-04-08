@@ -22,6 +22,9 @@
         text-decoration: none;
         color: black;
       }
+      .flex-item.banner{
+        background-color: gray ;
+      }
       /* PLAY BUTTONS */
       .flex-container {
         padding: 0;
@@ -60,7 +63,7 @@
         display:flex;
         position: absolute;
         width:300;
-        height:150;
+        height:190;
         left:calc(50% - 148px);
         top:50%;
       }
@@ -82,6 +85,16 @@
       #join-room-button{
         flex: 1;
         margin-left:2px;
+      }
+
+      #numplayers{
+        flex:1 100%;
+        background-color: transparent;
+        color:lightgray;
+        font-size:1.1em;
+      }
+      #numplayersamount{
+        color:lightgray;
       }
 
       .flex-item {
@@ -107,17 +120,17 @@
       }
 
       #lobby-section .flex-item{
-                text-transform: none;
+        text-transform: none;
         width:235px;
       }
 
-      #bluteam{
+      .bluteam{
         background-color: DodgerBlue !important;
-        color:white;
+        color:white !important;
       }
-      #redteam{
+      .redteam{
         background-color: tomato !important;
-        color:white;
+        color:white !important;
       }
 
       .flex-container .flex-item.player{
@@ -135,10 +148,6 @@
         margin: 5px 0px 5px 0px;
       }
 
-      #room-num{
-        background-color: gray;
-      }
-
       #code-num{
         margin-left:10px;
         color:black;
@@ -153,6 +162,10 @@
         background-repeat:no-repeat;
         background-position:right;
         background-size: 30px 30px;
+      }
+
+      #start-game{
+        background-color: tomato;
       }
       /* JOIN SECTION */
       #join-section{
@@ -175,7 +188,51 @@
       #code-input{
         flex:1;
       }
-      /* BUTTON */
+      /* LEADERBOARD */
+      #leaderboard-section{
+        padding:30px;
+        background-color: #efefef;
+        display: none;
+        position: absolute;
+        width:500;
+        height:390;
+        left:calc(50% - 283px);
+        top:calc(50% - 198px);
+        border: 3px solid black;
+      }
+
+      #leaderboard-section .flex-item{
+        text-transform: none;
+        width:215px;
+        text-align: left;
+        padding-left:20px;
+      }
+
+      #leaderboard-section .flex-item.player{
+        background-color: white;
+        display:flex;
+      }
+
+      #leaderboard-section .flex-item.player .name{
+        flex:none;
+        text-align: left;
+        width:150px;
+        margin:0px;
+      }
+      #leaderboard-section .flex-item.player p{
+        text-align: right;
+        margin-right:30px;
+        flex:1;
+        color:gray;
+      }
+
+      #leaderboard-section .banner{
+        margin:0px;
+      }
+      #round-num{
+        padding-left:20px;
+      }
+
     </style>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -184,21 +241,28 @@
   <body>
     <div class="canvas-container">
       <canvas id="myCanvas"></canvas>
+
+      <!-- MAIN MENU -->
       <div class="flex-container" id="main-section">
         <input class="flex-item" type="text" onclick="clearfield();" id="name-input" value="Enter your NAME here" maxlength="10">
         <a href="#" class="flex-item" id="play-button" onClick="startGame()">Play solo</a>
         <a href="#" class="flex-item" id="create-room-button" onClick="createRoom()">Create room</a>
         <a href="#" class="flex-item" id="join-room-button" onClick="joinRoomInput()">Join room</a>
+        <p class="flex-item" id="numplayers"> Currently playing:
+          <span id="numplayersamount">0</span>
+        </p>
       </div>
+
+      <!-- LOBBY -->
       <div class="flex-container" id="lobby-section" display="none">
-        <div class="flex-item banner" id="room-num">
+        <div class="flex-item banner" >
           <p>
             Your room code is:
             <span id="code-num"></span>
           </p>
         </div>
-        <p href="#"class="flex-item player" id="bluteam">BLUE</p>
-        <p href="#"class="flex-item player" id="redteam">RED</p>
+        <p href="#"class="flex-item player bluteam">BLUE</p>
+        <p href="#"class="flex-item player redteam">RED</p>
         <p class="flex-item player icon" id="bp1"></p>
         <p class="flex-item player icon" id="rp1"></p>
         <p class="flex-item player icon" id="bp2"></p>
@@ -216,6 +280,29 @@
         </a>
       </div>
 
+      <!-- LEADERBOARD -->
+      <div class="flex-container" id="leaderboard-section" display="none">
+        <div class="flex-item banner" id="round-num">
+          <p>
+            ROUND NUMBER #
+          </p>
+        </div>
+        <p href="#"class="flex-item player bluteam">BLUE</p>
+        <p href="#"class="flex-item player redteam">RED</p>
+        <span class="flex-item player"><p class="name"id="lbp1"></p><p id="bp1k"></p><p id="bp1d"></p></span>
+        <span class="flex-item player"><p class="name"id="lrp1"></p><p id="rp1k"></p><p id="rp1d"></p></span>
+        <span class="flex-item player"><p class="name"id="lbp2"></p><p id="bp2k"></p><p id="bp2d"></p></span>
+        <span class="flex-item player"><p class="name"id="lrp2"></p><p id="rp2k"></p><p id="rp2d"></p></span>
+        <span class="flex-item player"><p class="name"id="lbp3"></p><p id="bp3k"></p><p id="bp3d"></p></span>
+        <span class="flex-item player"><p class="name"id="lrp3"></p><p id="rp3k"></p><p id="rp3d"></p></span>
+        <span class="flex-item player"><p class="name"id="lbp4"></p><p id="bp4k"></p><p id="bp4d"></p></span>
+        <span class="flex-item player"><p class="name"id="lrp4"></p><p id="rp4k"></p><p id="rp4d"></p></span>
+        <span class="flex-item player"><p class="name"id="lbp5"></p><p id="bp5k"></p><p id="bp5d"></p></span>
+        <span class="flex-item player"><p class="name"id="lrp5"></p><p id="rp5k"></p><p id="rp5d"></p></span>
+        <a href="#" class="flex-item banner" onClick="backToMenu()">Leave game</a>
+      </div>
+
+      <!-- JOIN ROOM MENU -->
       <div class="flex-container" id="join-section" display="none">
         <input class="flex-item" type="text" onclick="clearfieldCode();" id="code-input" value="Enter your CODE here" maxlength="4">
         <a href="#" class="flex-item button" onClick="joinRoom()"id="join">Join</a>

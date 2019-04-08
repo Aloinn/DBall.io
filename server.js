@@ -70,9 +70,9 @@ function makeTeams(room){
     }
     // SORTS PLAYER TEAMS
     if(player.team === 'blue'){// IF BLUE
-      room.blue.push({name:player.name, ready:player.ready, })
+      room.blue.push({kills:0, deaths:0, name:player.name, ready:player.ready, })
     } else {
-      room.red.push({name:player.name, ready:player.ready, })
+      room.red.push({kills:0, deaths:0, name:player.name, ready:player.ready, })
     }
   }
 }
@@ -134,8 +134,12 @@ function startGame(rmnm){
   // PUTS PLAYERS LEFT/RIGHT
   for(var i = 0; i < room.players.length; i ++){
     var player = players[room.players[i]];
-    room.objects[room.players[i]] = player;
+    // AT START OF GAME SET PLAYERS KILLS & DEATHS TO 0
+    player.kills = 0;
+    player.deaths = 0;
 
+    room.objects[room.players[i]] = player;
+    // SPAWN PLAYERS ACCORDING TO TEAM
     if(player.team === 'blue'){
       player.x = cwidth*0.25;
       player.y = cheight*bb / (blues+1)
@@ -159,10 +163,11 @@ function startGame(rmnm){
   delayStart(room);
 }
 
-//
+// TIMER BEFORE GAME STARTS
+//( takes room object as variable )
 function delayStart(room){
   // SECONDS TO COUNT DOWN
-  var time = 4
+  var time = 4;
   room.objects['timer'].time = time+1;
 
   var timer = setInterval(function(){
@@ -181,57 +186,59 @@ function delayStart(room){
   },1000);
 }
 
-//
-function endGame(rmnm){
-
-}
-
 // END GAME
 // ( takes room object as variable )
 // ( stop running step processes and deletes room object )
+var connected = 0;
 function endGame(room){
   clearInterval(room.stepEmit);
   delete room;
 }
 
 io.on('connection',function(socket){
-
+  connected +=1;
+  io.sockets.emit('global players', connected);
   // NEW CONNECTION
   socket.on('new connection',function(name){
-    playerid = socket.id;
-    players[playerid] = new Object();
-    players[playerid].name = name;
-    players[playerid].rm = 0;
-    players[playerid].ready = false;
-    players[playerid].team = "undeclared";
+    players[socket.id] = new Object();
+    var player = players[socket.id];
+    player.name = name;
+    player.rm = 0;
+    player.ready = false;
+    player.team = "undeclared";
+    player.kills = 0;
+    player.deaths = 0;
   });
 
   // PLAYER CREATES A ROOM
   socket.on('create',function(){
     // MAKE NEW ROOM ID
     var rmnm = makeid();
+
       // KEEP GENERATING CODE UNTIL ITS COMPLETELY UNIQUE
     while(typeof rooms[rmnm] != "undefined")
     {rmnm = makeid();}
       // ADD ROOM ID TO ROOM LIST
     var player = players[socket.id]
     rooms[rmnm] = new Object();
-    rooms[rmnm].rmnm = rmnm;
-    rooms[rmnm].state = states.waiting;
+    var room = rooms[rmnm];
 
-    rooms[rmnm].players = [];
-    rooms[rmnm].players.push(socket.id);
+    room.rmnm = rmnm;
+    room.state = states.waiting;
 
-    rooms[rmnm].balls = [];
-    rooms[rmnm].objects = {}
+    room.players = [];
+    room.players.push(socket.id);
 
-    rooms[rmnm].blue = [];
-    rooms[rmnm].red = [];
+    room.balls = [];
+    room.objects = {}
 
-    rooms[rmnm].stepPlayers = 0;
-    rooms[rmnm].stepBalls = 0;
+    room.blue = [];
+    room.red = [];
 
-    makeTeams(rooms[rmnm]);
+    room.stepPlayers = 0;
+    room.stepBalls = 0;
+
+    makeTeams(room);
 
     player.rm = rmnm;
     socket.join(rmnm);
@@ -373,6 +380,10 @@ io.on('connection',function(socket){
 
   // WHEN PLAYER DISCONNECTS SUDDENLY
   socket.on('disconnect',function(){
+    // TELLS EVERYONE A PLAYER HAS DISCONNECTED
+    connected -=1;
+    io.sockets.emit('global players', connected);
+
     var player = players[socket.id] || {};
 
     // IF PLAYER HAS VARIABLES THEN DELETE THEM
@@ -420,6 +431,9 @@ function disconnectLobby(rmnm,socket,dc){
 var players = {};
 var gameSpeed = 1000/60;
 
+// DEACTIVATE BALLS
+//( takes a ball object as variable )
+//( deactivates by setting a number of variables to false)
 function deactivateBall(ball){
   ball.color = "#efefef";
   ball.prevowner = undefined;
@@ -428,12 +442,15 @@ function deactivateBall(ball){
   ball.active = false;
 }
 
+// ACTIVATE BALLS
+//( takes a ball and and owner as variables)
 function activateBall(ball, owner){
   ball.color = "#efefef";
   ball.prevowner = owner;
   ball.team = ball.owner.team;
   ball.owner = undefined;
 }
+
 // STEP BALLS
 //( takes the list of balls from the room )
 //( dampens ball speed each step )
@@ -570,6 +587,6 @@ function stepRoom(room){
 //( sends all client in room a list of objetcs to render )
 function stepEmit(rmnm, objects){
   return setInterval(function(){
-    io.sockets.in(rmnm).emit('state',objects);
+    io.sockets.in(rmnm).emit('state',objects,rooms[rmnm].red,rooms[rmnm].blue);
   }, gameSpeed);
 }
