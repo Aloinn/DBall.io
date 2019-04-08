@@ -57,6 +57,8 @@ function makeTeams(room){
   for(var i = 0; i < room.players.length; i ++){
     // ITERATES ALL PLAYER OBJECTS IN ROOM USING
     // ID FROM ROOM'S PLAYER ARRAY
+    console.log(players[room.players[i]]);
+    console.log(room.players[i]);
     var player = players[room.players[i]];
 
     // IF PLAYER HAS UNDECLARED TEAM
@@ -189,12 +191,12 @@ function delayStart(room){
 // END GAME
 // ( takes room object as variable )
 // ( stop running step processes and deletes room object )
-var connected = 0;
 function endGame(room){
   clearInterval(room.stepEmit);
   delete room;
 }
 
+var connected = 0;
 io.on('connection',function(socket){
   connected +=1;
   io.sockets.emit('global players', connected);
@@ -400,6 +402,7 @@ io.on('connection',function(socket){
     // ELSE IF NOT LAST PERSON IN ROOM
     else if(player.rm && rooms[player.rm]){
       disconnectLobby(player.rm, socket, true);
+      makeTeams(rooms[player.rm]);
     }
 
     // Delete player
@@ -452,7 +455,7 @@ function activateBall(ball, owner){
 }
 
 // STEP BALLS
-//( takes the list of balls from the room )
+//( takes a ball from the room )
 //( dampens ball speed each step )
 //( checks for ball to player collisions & ball to wall )
 //( player throwball physics )
@@ -532,9 +535,43 @@ function stepBalls(ball){
 }
 
 // STEP PLAYERS
+//( takes a player object and list of balls from the room )
+//( checks if player is charging )
+//( checks if player collides with any balls )
+function stepPlayers(player, balls){
+  // CHARGE UP THROW
+  if(player.charging === true){
+    if(player.charge < 2){
+      player.charge+= 0.00065;
+    }
+  }
+  // CHECK BALL PICKUP
+  if(player.ball === false){
+    // IF ONE OF THE NUM OF BALLS TOUCHES PLAYER, PLAYER OWNS IT
+    // ITERATES THROUGH BALLS
+    for(var i = 0; i <  balls.length; i++){
+      var ball = balls[i];
+      // IF BALL COLLIDES WITH PLAYER
+      if(Math.abs(ball.x - player.x)<30 && Math.abs(ball.y - player.y)<30 && ball.owner === undefined){
+        // IF BALL IS NOT ACTIVE, LET PLAYER PICK UP
+        if(ball.active === false) {
+          //ball.color = 'gray';
+          ball.owner = player;
+          player.ball = true;
+        }
+        // IF BALL IS ACTIVE AND NOT ON PLAYER'S TEAM
+        if(ball.active === true && balls.team != player.team){
+          // IF BALL HIS PLAYER && BALL IS NOT THROWN BY PLAYERS TEAM MEMBER
+          delete objects[id]
+        }
+      }
+    }
+  }
+}
+
+// STEP PLAYERS
 //( takes the room object as variable )
-//( sets whether player is charging or not )
-//( if player is charging, wind up charge )
+//( checks if object is ball or player and send them to according method )
 function stepRoom(room){
   var objects = room.objects;
   var balls = room.balls;
@@ -543,42 +580,10 @@ function stepRoom(room){
     // SETS THE OBJECT AS THE CORRESPONDING ITEM FROM ARRAY
     var object = objects[id];
     // IF ITERATED OBJECT IS IS A PLAYER
-    if(object.type === 'player'){
-      var player = object;
-      // CHARGE UP THROW
-      if(player.charging === true){
-        if(player.charge < 2){
-          player.charge+= 0.00065;
-        }
-      }
-      // CHECK BALL PICKUP
-      if(player.ball === false){
-        // IF ONE OF THE NUM OF BALLS TOUCHES PLAYER, PLAYER OWNS IT
-        // ITERATES THROUGH BALLS
-        for(var i = 0; i <  balls.length; i++){
-          var ball = balls[i];
-          // IF BALL COLLIDES WITH PLAYER
-          if(Math.abs(ball.x - player.x)<30 && Math.abs(ball.y - player.y)<30 && ball.owner === undefined){
-            // IF BALL IS NOT ACTIVE, LET PLAYER PICK UP
-            if(ball.active === false) {
-              //ball.color = 'gray';
-              ball.owner = player;
-              player.ball = true;
-            }
-            console.table(ball);
-            console.table(player);
-            // IF BALL IS ACTIVE AND NOT ON PLAYER'S TEAM
-            if(ball.active === true && balls.team != player.team){
-              // IF BALL HIS PLAYER && BALL IS NOT THROWN BY PLAYERS TEAM MEMBER
-              console.log('oof!');
-              delete objects[id]
-            }
-          }
-        }
-      }
-    } else {
-      stepBalls(object);
-    }
+    if(object.type === 'player')
+    {stepPlayers(object,balls);}
+    else if (object.type ==='ball')
+    {stepBalls(object);}
   }
 }
 

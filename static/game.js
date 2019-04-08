@@ -183,9 +183,6 @@ function keyUpHandler(a){
   if(a.which===16){input.shift = false;}
 }
 
-function toggleLeaderboard(){
-
-}
                         ///////////////
                         // MAIN MENU //
                         ///////////////
