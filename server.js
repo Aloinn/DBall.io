@@ -57,9 +57,9 @@ function makeTeams(room){
   for(var i = 0; i < room.players.length; i ++){
     // ITERATES ALL PLAYER OBJECTS IN ROOM USING
     // ID FROM ROOM'S PLAYER ARRAY
-    console.log(players[room.players[i]]);
-    console.log(room.players[i]);
     var player = players[room.players[i]];
+    var kd = player.kills;
+    var pd = player.deaths;
 
     // IF PLAYER HAS UNDECLARED TEAM
     if(player.team === "undeclared"){
@@ -72,13 +72,39 @@ function makeTeams(room){
     }
     // SORTS PLAYER TEAMS
     if(player.team === 'blue'){// IF BLUE
-      room.blue.push({kills:0, deaths:0, name:player.name, ready:player.ready, })
+      room.blue.push({kills:kd, deaths:pd, name:player.name, ready:player.ready, })
     } else {
-      room.red.push({kills:0, deaths:0, name:player.name, ready:player.ready, })
+      room.red.push({kills:kd, deaths:pd, name:player.name, ready:player.ready, })
     }
   }
 }
 
+function checkRound(room, objects){
+  // TEAM STILL HAS MEMBER?
+  var red = false;
+  var blue = false;
+  for(var id in objects){
+    var player = objects[id];
+    if(player.type === 'player'){
+      if(player.team === 'blue')
+      {blue = true;}
+      if(player.team === 'red')
+      {red = true;}
+    }
+  }
+  console.log(red);
+  console.log(blue);
+  // IF ONE TEAM IS OUT OF PLAYERS
+  if(!red || !blue){
+    if(red){
+      console.log('RED WINS!');
+      // RED TEAM WINS
+    } else {
+      // BLUE TEAM WINS
+      console.log('BLUE WINS!');
+    }
+  }
+}
 // SPAWN BALLS
 //( takes room object, and number of balls as params )
 //( creates ball objects inside the room )
@@ -403,6 +429,7 @@ io.on('connection',function(socket){
     else if(player.rm && rooms[player.rm]){
       disconnectLobby(player.rm, socket, true);
       makeTeams(rooms[player.rm]);
+      checkRound(rooms[player.rm],rooms[player.rm].objects);
     }
 
     // Delete player
@@ -538,7 +565,7 @@ function stepBalls(ball){
 //( takes a player object and list of balls from the room )
 //( checks if player is charging )
 //( checks if player collides with any balls )
-function stepPlayers(player, balls){
+function stepPlayers(player, balls, id, objects){
   // CHARGE UP THROW
   if(player.charging === true){
     if(player.charge < 2){
@@ -560,9 +587,13 @@ function stepPlayers(player, balls){
           player.ball = true;
         }
         // IF BALL IS ACTIVE AND NOT ON PLAYER'S TEAM
-        if(ball.active === true && balls.team != player.team){
+        if(ball.active === true && ball.team != player.team){
           // IF BALL HIS PLAYER && BALL IS NOT THROWN BY PLAYERS TEAM MEMBER
-          delete objects[id]
+          player.deaths += 1;
+          ball.prevowner.kills += 1;
+          makeTeams(rooms[player.rm]);
+          delete objects[id];
+          checkRound(rooms[player.rm],rooms[player.rm].objects);
         }
       }
     }
@@ -581,7 +612,7 @@ function stepRoom(room){
     var object = objects[id];
     // IF ITERATED OBJECT IS IS A PLAYER
     if(object.type === 'player')
-    {stepPlayers(object,balls);}
+    {stepPlayers(object,balls,id,objects);}
     else if (object.type ==='ball')
     {stepBalls(object);}
   }
