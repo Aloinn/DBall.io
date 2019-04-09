@@ -74,7 +74,7 @@ function drawname(object){
 // DRAW CHARGE
 function drawcharge(object){
   ctx.beginPath();
-  ctx.rect((object.x*ratioX)-(45*ratio), (object.y*ratioY)+(30*ratio), 15*(ratio), (object.charge-1)*-(60*ratio) );
+  ctx.rect((object.x*ratioX)-(45*ratio*(object.team==='blue'? 1 : -1)), (object.y*ratioY)+(30*ratio), 15*(ratio), (object.charge-1)*-(60*ratio) );
   ctx.fillStyle = object.color;
   ctx.fill();
   ctx.lineWidth = 3*ratio;

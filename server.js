@@ -96,6 +96,9 @@ function checkRound(room, objects){
 
   // IF ONE TEAM IS OUT OF PLAYERS
   if(!red || !blue){
+    if(room.objects['broadcast'])
+    {delete room.objects['broadcast'];}
+
     room.objects['broadcast'] = new Object();
     room.objects['broadcast'].type = 'broadcast';
     var message = "";
@@ -107,6 +110,7 @@ function checkRound(room, objects){
       message = "BLUE WINS";
     }
     room.objects['broadcast'].message = message;
+    room.objects['broadcast'].display = 'message';
     delay(room,'end')
   }
 }
@@ -145,6 +149,13 @@ function createPlayer(player){
   player.charging = false;
   player.speed = 4.5;
   player.speedmax = 4.5;
+  player.dropBall = function(){
+    // IF PLAYER HAS VARIABLES THEN DELETE THEM
+    if(typeof player.charge != undefined){
+      player.charge = 0;
+      player.ball = false;
+    }
+  }
 }
 
 // START GAME
@@ -169,6 +180,7 @@ function startGame(rmnm){
   // PUTS PLAYERS LEFT/RIGHT
   for(var i = 0; i < room.players.length; i ++){
     var player = players[room.players[i]];
+    createPlayer(player);
     // AT START OF GAME SET PLAYERS KILLS & DEATHS TO 0
     player.kills = 0;
     player.deaths = 0;
@@ -186,11 +198,11 @@ function startGame(rmnm){
       rr += 1;
       player.color = 'tomato';
     }
-    createPlayer(player);
   }
   // ADDS TIMER
   room.objects['broadcast'] = new Object();
   room.objects['broadcast'].type = 'broadcast';
+  room.objects['broadcast'].display ='time';
 
   // START ROOM
   io.sockets.in(rmnm).emit('start game',rooms[rmnm]);
@@ -233,6 +245,7 @@ function restartGame(room){
   // ADDS TIMER
   room.objects['broadcast'] = new Object();
   room.objects['broadcast'].type = 'broadcast';
+  room.objects['broadcast'].display = 'time';
   // STARTS ROOM
   room.state = states.starting;
   delay(room,'start');
@@ -248,17 +261,21 @@ function delay(room, type){
     room.objects['broadcast'].message = time+1;
 
     var timer = setInterval(function(){
-      // IF TIME IS 0
-      room.objects['broadcast'].message = time;
-      if(time === -1){
-        // CLEAR TIMER AND START STEP PROCESS
-        clearInterval(timer);
-        delete room.objects['broadcast'];
-        room.state = states.playing;
-        room.stepRoom = setInterval(()=>{stepRoom(room);}); // FIX THIS LATER
+      if(room.objects['broadcast'].display === 'time'){
+        // IF TIME IS 0
+        room.objects['broadcast'].message = time;
+        if(time === -1){
+          // CLEAR TIMER AND START STEP PROCESS
+          clearInterval(timer);
+          delete room.objects['broadcast'];
+          room.state = states.playing;
+          room.stepRoom = setInterval(()=>{stepRoom(room);}); // FIX THIS LATER
+        } else {
+          // SUBTRACT 1 SECOND FROM COUNTER
+          time -=1;
+        }
       } else {
-        // SUBTRACT 1 SECOND FROM COUNTER
-        time -=1;
+        clearInterval(timer);
       }
     },1000);
   }
@@ -480,11 +497,9 @@ io.on('connection',function(socket){
 
     var player = players[socket.id] || {};
 
-    // IF PLAYER HAS VARIABLES THEN DELETE THEM
-    if(typeof player.charge != undefined){
-      player.charge = 0;
-      player.ball = false;
-    }
+    // MAKES PLAYER DROP BALL
+    if(player.dropBall)
+    {player.dropBall();}
 
     // If player is last player in room, delete room
     if(player.rm && rooms[player.rm] &&rooms[player.rm].players && rooms[player.rm].players.length == 1){
@@ -638,29 +653,26 @@ function stepPlayers(player, balls, id, objects){
       player.charge+= 0.00065;
     }
   }
-  // CHECK BALL PICKUP
-  if(player.ball === false){
-    // IF ONE OF THE NUM OF BALLS TOUCHES PLAYER, PLAYER OWNS IT
-    // ITERATES THROUGH BALLS
-    for(var i = 0; i <  balls.length; i++){
-      var ball = balls[i];
-      // IF BALL COLLIDES WITH PLAYER
-      if(Math.abs(ball.x - player.x)<30 && Math.abs(ball.y - player.y)<30 && ball.owner === undefined){
-        // IF BALL IS NOT ACTIVE, LET PLAYER PICK UP
-        if(ball.active === false) {
-          //ball.color = 'gray';
-          ball.owner = player;
-          player.ball = true;
-        }
-        // IF BALL IS ACTIVE AND NOT ON PLAYER'S TEAM
-        if(ball.active === true && ball.team != player.team){
-          // IF BALL HIS PLAYER && BALL IS NOT THROWN BY PLAYERS TEAM MEMBER
-          player.deaths += 1;
-          ball.prevowner.kills += 1;
-          makeTeams(rooms[player.rm]);
-          delete objects[id];
-          checkRound(rooms[player.rm],rooms[player.rm].objects);
-        }
+  // ITERATES THROUGH ALL BALLS IN ROOM
+  for(var i = 0; i <  balls.length; i++){
+    var ball = balls[i];
+    // CHECK BALL COLLISIONS
+    if(Math.abs(ball.x - player.x)<30 && Math.abs(ball.y - player.y)<30){
+      // IF BALL IS NOT ACTIVE, UNOWNED, AND PLAYER HAS FREE HAND, LET PLAYER PICK UP
+      if(ball.active === false && ball.owner === undefined && player.ball === false) {
+        //ball.color = 'gray';
+        ball.owner = player;
+        player.ball = true;
+      }
+      // IF BALL IS ACTIVE AND NOT ON PLAYER'S TEAM
+      if(ball.active === true && ball.team != player.team){
+        // IF BALL HIS PLAYER && BALL IS NOT THROWN BY PLAYERS TEAM MEMBER
+        player.dropBall();
+        player.deaths += 1;
+        ball.prevowner.kills += 1;
+        makeTeams(rooms[player.rm]);
+        delete objects[id];
+        checkRound(rooms[player.rm],rooms[player.rm].objects);
       }
     }
   }
