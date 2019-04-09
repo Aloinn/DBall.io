@@ -106,7 +106,11 @@ function drawTime(time){
   if(time === 0)
   {displayTime = "GO!"}
 
-  ctx.font = "bold 300px Arial";
+  if(Number.isInteger(time))
+  {ctx.font = "bold 300px Arial";}
+  else
+  {ctx.font = "bold 100px Arial";}
+
   ctx.fillStyle = "#efefef";
   ctx.fillText(displayTime,canvas.width/2,canvas.height*3/5)
   ctx.strokeText(displayTime,canvas.width/2, canvas.height*3/5);
@@ -125,8 +129,8 @@ function render(object){
 
   } else if(object.type === 'ball'){
     drawball(object);
-  } else if(object.type === 'timer'){
-    drawTime(object.time);
+  } else if(object.type === 'broadcast'){
+    drawTime(object.message);
   }
 }
 

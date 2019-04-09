@@ -79,6 +79,7 @@ function makeTeams(room){
   }
 }
 
+// CHECKS TO SEE IF THERE ARE ANY BLUE OR RED PLAYERS STILL IN GAME
 function checkRound(room, objects){
   // TEAM STILL HAS MEMBER?
   var red = false;
@@ -96,13 +97,17 @@ function checkRound(room, objects){
   console.log(blue);
   // IF ONE TEAM IS OUT OF PLAYERS
   if(!red || !blue){
+    room.objects['broadcast'] = new Object();
+    room.objects['broadcast'].type = 'broadcast';
+    var message = "";
     if(red){
-      console.log('RED WINS!');
       // RED TEAM WINS
+      message = "RED \n WINS";
     } else {
       // BLUE TEAM WINS
-      console.log('BLUE WINS!');
+      message = "BLUE \n WINS";
     }
+    room.objects['broadcast'].message = message;
   }
 }
 // SPAWN BALLS
@@ -182,29 +187,29 @@ function startGame(rmnm){
     createPlayer(player);
   }
   // ADDS TIMER
-  room.objects['timer'] = new Object();
-  room.objects['timer'].type = 'timer';
+  room.objects['broadcast'] = new Object();
+  room.objects['broadcast'].type = 'broadcast';
 
   // START ROOM
   io.sockets.in(rmnm).emit('start game',rooms[rmnm]);
   room.stepEmit = stepEmit(rmnm,room.objects);
-  delayStart(room);
+  delay(room);
 }
 
 // TIMER BEFORE GAME STARTS
 //( takes room object as variable )
-function delayStart(room){
+function delay(room){
   // SECONDS TO COUNT DOWN
   var time = 4;
-  room.objects['timer'].time = time+1;
+  room.objects['broadcast'].message = time+1;
 
   var timer = setInterval(function(){
     // IF TIME IS 0
-    room.objects['timer'].time = time;
+    room.objects['broadcast'].message = time;
     if(time === -1){
       // CLEAR TIMER AND START STEP PROCESS
       clearInterval(timer);
-      delete room.objects['timer'];
+      delete room.objects['broadcast'];
       room.state = states.playing;
       room.stepRoom = setInterval(()=>{stepRoom(room);}); // FIX THIS LATER
     } else {
