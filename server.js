@@ -82,36 +82,38 @@ function makeTeams(room){
 // CHECKS TO SEE IF THERE ARE ANY BLUE OR RED PLAYERS STILL IN GAME
 function checkRound(room, objects){
   // TEAM STILL HAS MEMBER?
-  var red = false;
-  var blue = false;
-  for(var id in objects){
-    var player = objects[id];
-    if(player.type === 'player'){
-      if(player.team === 'blue')
-      {blue = true;}
-      if(player.team === 'red')
-      {red = true;}
+  if(typeof room.objects['broadcast'] === 'undefined'){
+    var red = false;
+    var blue = false;
+    for(var id in objects){
+      var player = objects[id];
+      if(player.type === 'player'){
+        if(player.team === 'blue')
+        {blue = true;}
+        if(player.team === 'red')
+        {red = true;}
+      }
     }
-  }
 
-  // IF ONE TEAM IS OUT OF PLAYERS
-  if(!red || !blue){
-    if(room.objects['broadcast'])
-    {delete room.objects['broadcast'];}
+    // IF ONE TEAM IS OUT OF PLAYERS
+    if(!red || !blue){
+      if(room.objects['broadcast'])
+      {delete room.objects['broadcast'];}
 
-    room.objects['broadcast'] = new Object();
-    room.objects['broadcast'].type = 'broadcast';
-    var message = "";
-    if(red){
-      // RED TEAM WINS
-      message = "RED WINS";
-    } else {
-      // BLUE TEAM WINS
-      message = "BLUE WINS";
+      room.objects['broadcast'] = new Object();
+      room.objects['broadcast'].type = 'broadcast';
+      var message = "";
+      if(red){
+        // RED TEAM WINS
+        message = "RED WINS";
+      } else {
+        // BLUE TEAM WINS
+        message = "BLUE WINS";
+      }
+      room.objects['broadcast'].message = message;
+      room.objects['broadcast'].display = 'message';
+      delay(room,'end')
     }
-    room.objects['broadcast'].message = message;
-    room.objects['broadcast'].display = 'message';
-    delay(room,'end')
   }
 }
 // SPAWN BALLS
@@ -211,6 +213,7 @@ function startGame(rmnm){
 }
 
 function restartGame(room){
+  room.state = states.starting;
   // CLEAR OUT LIST OF OBJECTS IN ROOM
   room.objects.length = 0;
   // RESPAWN BALLS
@@ -228,6 +231,13 @@ function restartGame(room){
     var player = players[room.players[i]];
 
     room.objects[room.players[i]] = player;
+
+    if(typeof player === 'undefined'){
+      endGame(room);
+      delete room;
+      break;
+    }
+
     // SPAWN PLAYERS ACCORDING TO TEAM
     if(player.team === 'blue'){
       player.x = cwidth*0.25;
@@ -360,7 +370,8 @@ io.on('connection',function(socket){
   // PLAYER JOINS ROOM
   socket.on('join',function(rmnm){
     // CHECKS IF ROOM EXISTS
-    if(rooms[rmnm] && rooms[rmnm].players.length !=10){
+    if(rooms[rmnm] && rooms[rmnm].players.length !=10
+      && rooms[rmnm].state != states.playing && rooms[rmnm].state != states.starting){
       // IF SUCCESSFULLY JOINED ROOM
       var player = players[socket.id];
 
@@ -374,8 +385,10 @@ io.on('connection',function(socket){
       // IF CANNOT JOIN ROOM
       if(!rooms[rmnm])
       {io.to(`${socket.id}`).emit('no room', "Room does not exist!");}
-      else
+      else if(rooms[rmnm].players.length === 10)
       {io.to(`${socket.id}`).emit('no room', "Room is full!");}
+      else
+      {io.to(`${socket.id}`).emit('no room', "Game started!")}
     }
   })
 
@@ -689,10 +702,12 @@ function stepRoom(room){
     // SETS THE OBJECT AS THE CORRESPONDING ITEM FROM ARRAY
     var object = objects[id];
     // IF ITERATED OBJECT IS IS A PLAYER
-    if(object.type === 'player')
-    {stepPlayers(object,balls,id,objects);}
-    else if (object.type ==='ball')
-    {stepBalls(object);}
+    if(typeof object != 'undefined'){
+      if(object.type === 'player')
+      {stepPlayers(object,balls,id,objects);}
+      else if (object.type ==='ball')
+      {stepBalls(object);}
+    }
   }
 }
 
