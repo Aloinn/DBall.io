@@ -93,8 +93,7 @@ function checkRound(room, objects){
       {red = true;}
     }
   }
-  console.log(red);
-  console.log(blue);
+
   // IF ONE TEAM IS OUT OF PLAYERS
   if(!red || !blue){
     room.objects['broadcast'] = new Object();
@@ -102,12 +101,13 @@ function checkRound(room, objects){
     var message = "";
     if(red){
       // RED TEAM WINS
-      message = "RED \n WINS";
+      message = "RED WINS";
     } else {
       // BLUE TEAM WINS
-      message = "BLUE \n WINS";
+      message = "BLUE WINS";
     }
     room.objects['broadcast'].message = message;
+    delay(room,'end')
   }
 }
 // SPAWN BALLS
@@ -156,13 +156,15 @@ function startGame(rmnm){
 
   var room = rooms[rmnm];
   room.state = states.starting;
-  spawnBalls(rooms[rmnm], Math.max(1,Math.ceil(room.players.length/2)+1));
+  spawnBalls(room, Math.max(1,Math.ceil(room.players.length/2)+1));
 
   // TEMP VARIABLES FOR CALCULATIONS
   var blues = room.blue.length;
   var bb = 1;
   var reds = room.red.length;
   var rr = 1;
+  // CLEAR OUT LIST OF OBJECTS IN ROOM
+  room.objects.length = 0;
 
   // PUTS PLAYERS LEFT/RIGHT
   for(var i = 0; i < room.players.length; i ++){
@@ -193,30 +195,89 @@ function startGame(rmnm){
   // START ROOM
   io.sockets.in(rmnm).emit('start game',rooms[rmnm]);
   room.stepEmit = stepEmit(rmnm,room.objects);
-  delay(room);
+  delay(room,'start');
+}
+
+function restartGame(room){
+  // CLEAR OUT LIST OF OBJECTS IN ROOM
+  room.objects.length = 0;
+  // RESPAWN BALLS
+  room.balls.length = 0;
+  spawnBalls(room, Math.max(1,Math.ceil(room.players.length/2)+1));
+
+  // TEMP VARIABLES FOR CALCULATIONS
+  var blues = room.blue.length;
+  var bb = 1;
+  var reds = room.red.length;
+  var rr = 1;
+
+  // PUTS PLAYERS LEFT/RIGHT
+  for(var i = 0; i < room.players.length; i ++){
+    var player = players[room.players[i]];
+
+    room.objects[room.players[i]] = player;
+    // SPAWN PLAYERS ACCORDING TO TEAM
+    if(player.team === 'blue'){
+      player.x = cwidth*0.25;
+      player.y = cheight*bb / (blues+1)
+      bb += 1;
+      player.color = 'dodgerBlue';
+    } else {
+      player.x = cwidth*0.75
+      player.y = cheight*rr*1 / (reds+1)
+      rr += 1;
+      player.color = 'tomato';
+    }
+    createPlayer(player);
+  }
+  // ADDS TIMER
+  room.objects['broadcast'] = new Object();
+  room.objects['broadcast'].type = 'broadcast';
+  // STARTS ROOM
+  room.state = states.starting;
+  delay(room,'start');
 }
 
 // TIMER BEFORE GAME STARTS
 //( takes room object as variable )
-function delay(room){
-  // SECONDS TO COUNT DOWN
-  var time = 4;
-  room.objects['broadcast'].message = time+1;
+function delay(room, type){
+  // IF GAME IS STARTING
+  if(type === 'start'){
+    // SECONDS TO COUNT DOWN
+    var time = 2;
+    room.objects['broadcast'].message = time+1;
 
-  var timer = setInterval(function(){
-    // IF TIME IS 0
-    room.objects['broadcast'].message = time;
-    if(time === -1){
-      // CLEAR TIMER AND START STEP PROCESS
-      clearInterval(timer);
-      delete room.objects['broadcast'];
-      room.state = states.playing;
-      room.stepRoom = setInterval(()=>{stepRoom(room);}); // FIX THIS LATER
-    } else {
-      // SUBTRACT 1 SECOND FROM COUNTER
-      time -=1;
-    }
-  },1000);
+    var timer = setInterval(function(){
+      // IF TIME IS 0
+      room.objects['broadcast'].message = time;
+      if(time === -1){
+        // CLEAR TIMER AND START STEP PROCESS
+        clearInterval(timer);
+        delete room.objects['broadcast'];
+        room.state = states.playing;
+        room.stepRoom = setInterval(()=>{stepRoom(room);}); // FIX THIS LATER
+      } else {
+        // SUBTRACT 1 SECOND FROM COUNTER
+        time -=1;
+      }
+    },1000);
+  }
+  // IF GAME JUST ENDED
+  if(type ==='end'){
+    var time = 2;
+    var timer = setInterval(function(){
+      if(time === -1){
+        // CLEAR TIMER AND START STEP PROCESS
+        clearInterval(timer);
+        delete room.objects['broadcast'];
+        clearInterval(room.stepRoom);
+        restartGame(room);
+      } else {
+        // SUBTRACT 1 SECOND FROM COUNTER
+        time -=1;
+      }
+    },1000);
+  }
 }
 
 // END GAME
